@@ -1,34 +1,33 @@
 # ZCS Connect — instructions for Claude Code
 
 Parent–school communication platform for Zeeland Christian School (ZCS): an Expo app for iOS + Android
-(parents and teachers) and a Next.js web console for office staff. Backend will be Supabase.
+(parents and teachers) and a Next.js web console for office staff, on Supabase.
 
 **Read `docs/SPEC.md` before any feature work.** It is the requirements source of truth. If code and spec
-disagree, stop and ask; don't silently pick one.
+disagree, stop and ask; don't silently pick one. `docs/LAUNCH.md` lists the remaining manual setup.
 
-## Current phase: frontend first, on mock data
+## How it's built
 
-We are building the UI for both apps against an in-memory mock data layer. Supabase is wired in later.
-So:
-
-- All data access goes through the `DataSource` interface in `packages/core`. Screens never import
-  fixtures directly and never call `fetch`/Supabase directly.
-- `packages/mock` implements `DataSource` with realistic fixtures and simulated latency (150–400 ms) and
-  simulated delivery progress, so loading, empty and error states are real.
-- Permission and audience logic (`can_read_post`, `can_post_to`, audience resolution, context derivation)
-  lives as pure functions in `packages/core/permissions` with unit tests. The UI uses these to decide
-  what to *show*; the database will enforce the same rules later. Keep them in sync with SPEC §Roles
-  and §Audience rules.
+- **The database is the authority.** Every read is gated by row-level security (deny by default) and
+  every write goes through a `SECURITY DEFINER` RPC with `search_path = ''` that checks permissions and
+  writes `audit_log`. Clients only `select` and call RPCs. Authority comes only from `memberships`
+  (staff roles with scope) and `guardianships` (parent ↔ student); there is no role column on people.
+- **Schema changes are new migrations** in `supabase/migrations/` (never edit an applied one). Add an
+  allow and a deny case to `supabase/tests/permissions_test.sql` for any new permission.
+- **Clients** call Supabase only through the typed wrappers in `packages/core` (`api.ts`, `admin.ts`).
+  The UI may hide things the user can't do, but must never be the only check.
+- **Delivery:** posts and messages enqueue jobs on pgmq `notify`; the `deliver` Edge Function sends
+  push (Expo) and email (Resend), records `deliveries`, and pg_cron drives scheduling, email fallback
+  after 15 minutes and receipts. Quiet hours delay everything except emergencies.
 
 ## Repo layout (pnpm workspace)
 
 ```
-apps/mobile      Expo SDK (latest stable), Expo Router, TanStack Query, TypeScript strict
-apps/console     Next.js (App Router), Tailwind, TypeScript strict
-packages/core    Domain types, DataSource interface, permissions, audience resolution, zod schemas
-packages/mock    Fixtures + MockDataSource
-packages/ui      Design tokens (colors, type, spacing) shared by both apps
-docs/            SPEC.md, prompts/, decisions/ (one short md per decision, ADR style)
+apps/mobile      Expo SDK 57, Expo Router, TanStack Query (persisted offline cache), TypeScript strict
+apps/console     Next.js 16 (App Router), Tailwind v4, TypeScript strict
+packages/core    Types, typed RPC client, formatting, context helpers, roster parsing (Vitest)
+supabase/        migrations, functions/deliver, seed/demo_school.sql, tests/permissions_test.sql
+docs/            SPEC.md, LAUNCH.md, screenshots
 ```
 
 ## Non-negotiable product rules
@@ -58,23 +57,23 @@ docs/            SPEC.md, prompts/, decisions/ (one short md per decision, ADR s
 
 ## Conventions
 
-- TypeScript strict, no `any`. Zod for every form and every DataSource boundary.
-- Feature folders: `apps/mobile/src/features/<feature>/{screens,components,hooks}`.
+- TypeScript strict, no `any`. Validate inputs in the RPC; keep client validation for friendly messages only.
+- Routes live in `apps/mobile/src/app` (Expo Router); shared pieces in `src/features/<feature>` and `src/components`.
 - Copy is warm and plain. "Families", not "users". Use the child's preferred name.
-- Tests: Vitest for `packages/*`; React Native Testing Library for key screens; Playwright smoke test
-  for the console. `pnpm check` = lint + typecheck + test must pass before every commit.
+- Tests: Vitest for `packages/core`, SQL permission tests for the database. `pnpm check` (typecheck +
+  tests) and CI must pass before merging.
 - Small commits with clear messages. Don't add dependencies without a one-line reason in the PR.
 
 ## Commands (keep these working)
 
 ```
 pnpm install
-pnpm dev:mobile     # Expo dev server (press i / a, or scan with Expo Go)
+pnpm dev:mobile     # Expo dev server (use a development build: npx eas-cli build --profile development)
 pnpm dev:console    # http://localhost:3000
-pnpm check          # lint + typecheck + tests, all workspaces
+pnpm check          # typecheck + tests, all workspaces
 ```
 
-## Demo personas (mock data must include all of these)
+## Demo personas (in `supabase/seed/demo_school.sql`)
 
 - **Sarah VanDyke** — parent of Emma (3rd grade) and Noah (Kindergarten). Two guardians on both kids.
 - **Mrs. Jennifer Smith** — 3rd-grade teacher **and** parent of Lily (6th grade) → exercises the context switcher.
