@@ -1,0 +1,14 @@
+{
+  "name": "zcs-connect",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev:mobile": "pnpm --filter mobile start",
+    "dev:console": "pnpm --filter console dev",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "test": "pnpm -r --parallel test",
+    "lint": "pnpm -r --parallel lint",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "engines": { "node": ">=20" }
+}

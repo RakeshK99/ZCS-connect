@@ -1,6 +1,8 @@
 # ZCS Connect — Product Requirements & Architecture Spec
 
 Source of truth: the living spec doc (Claude Docs). This file is a snapshot dated 2026-10-10 for engineering.
+
+**Build status (2026-10-10):** v1 is implemented: app (parent + teacher), staff console, database and delivery. Remaining work is account setup in `docs/LAUNCH.md`.
 When the two disagree, ask Rakesh; update this file in the same PR as the code that depends on the change.
 
 ## Decisions recorded since the spec was drafted
