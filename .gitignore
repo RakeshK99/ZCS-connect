@@ -2,7 +2,14 @@ node_modules/
 .expo/
 .next/
 dist/
-.env*
+web-build/
+ios/
+android/
+*.tsbuildinfo
+.env
+.env.*
 !.env.example
 .DS_Store
 *.log
+coverage/
+.vercel
