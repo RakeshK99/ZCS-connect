@@ -13,3 +13,5 @@ android/
 *.log
 coverage/
 .vercel
+playground-dist/
+apps/console/out/

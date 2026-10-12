@@ -8,6 +8,7 @@ import { appleAvailable, isAppleCancel, sendEmailCode, signInWithApple, signInWi
 import { useTheme } from '@/theme/ThemeProvider';
 import { font } from '@/theme/tokens';
 import { staffSignIn } from '@/lib/staff';
+import { DemoSignIn } from '@/features/demo/DemoSignIn';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -50,6 +51,7 @@ export default function SignIn() {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: insets.bottom + 24, gap: 12 }}>
         <H>Sign in</H>
         <T tone="tx2" style={{ marginBottom: 12 }}>Use the email the school office has on file for your family. No password needed.</T>
+        <DemoSignIn />
         {apple ? (
           <Button label="Sign in with Apple" variant="apple" loading={busy === 'apple'} onPress={() => run('apple', signInWithApple)}
             leading={<Text style={{ fontSize: 19, color: c.appleTx }}></Text>} />

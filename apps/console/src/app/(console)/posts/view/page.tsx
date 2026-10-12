@@ -3,7 +3,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, type FamilyStatus } from '@zcs/core';
 import { ArrowLeft, Download, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { use, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { Badge, Button, Card, ErrorNote, PageHeader, ReachBar, SectionTitle, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
@@ -17,9 +18,13 @@ function csv(rows: FamilyStatus[]) {
   URL.revokeObjectURL(url);
 }
 
-export default function PostReach({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const reach = useQuery({ queryKey: ['reach', id], queryFn: () => api.postReach(supabase, id), refetchInterval: 5000 });
+export default function Page() {
+  return <Suspense fallback={<Spinner />}><PostReach /></Suspense>;
+}
+
+function PostReach() {
+  const id = useSearchParams().get('id') ?? '';
+  const reach = useQuery({ queryKey: ['reach', id], queryFn: () => api.postReach(supabase, id), enabled: !!id, refetchInterval: 5000 });
   const [reminded, setReminded] = useState<string | null>(null);
   const remind = useMutation({
     mutationFn: (ids: string[]) => api.remindFamilies(supabase, id, ids),

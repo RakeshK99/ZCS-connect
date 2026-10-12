@@ -57,12 +57,12 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {sends.data.map((p) => (
-                <tr key={p.id} className="border-t border-bd hover:bg-bg cursor-pointer" onClick={() => router.push(`/posts/${p.id}`)}>
+                <tr key={p.id} className="border-t border-bd hover:bg-bg cursor-pointer" onClick={() => router.push(`/posts/view?id=${p.id}`)}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {p.priority === 'emergency' ? <Badge tone="red">Emergency</Badge> : p.priority === 'important' ? <Badge tone="maize">Important</Badge> : null}
                       {p.status === 'scheduled' ? <Badge>Scheduled</Badge> : null}
-                      <Link href={`/posts/${p.id}`} className="font-semibold hover:underline">{p.title}</Link>
+                      <Link href={`/posts/view?id=${p.id}`} className="font-semibold hover:underline">{p.title}</Link>
                     </div>
                     <div className="text-sm text-tx2">{p.author}</div>
                   </td>

@@ -56,7 +56,7 @@ export default function Compose() {
         scheduledAt: schedule ? new Date(schedule).toISOString() : null, attachments,
       });
       qc.invalidateQueries({ queryKey: ['recent-sends'] });
-      router.push(`/posts/${res.id}`);
+      router.push(`/posts/view?id=${res.id}`);
     } catch (e) {
       setError(e);
     } finally {
