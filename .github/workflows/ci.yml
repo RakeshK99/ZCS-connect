@@ -29,6 +29,15 @@ jobs:
         env:
           EXPO_OFFLINE: 1
 
+  database:
+    # Migrations + demo seed + permission tests (allow and deny cases) on a
+    # throwaway PostgreSQL with Supabase platform stubs.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Permission tests
+        run: supabase/tests/run_local.sh
+
   edge-functions:
     runs-on: ubuntu-latest
     steps:

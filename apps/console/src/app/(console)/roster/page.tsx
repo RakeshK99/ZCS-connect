@@ -37,7 +37,7 @@ export default function RosterImport() {
   const [mapping, setMapping] = useState<RosterField[]>([]);
   const [rows, setRows] = useState<RosterRow[]>([]);
   const [preview, setPreview] = useState<RosterPreview | null>(null);
-  const [deactivate, setDeactivate] = useState(true);
+  const [deactivate, setDeactivate] = useState(false);
   const [result, setResult] = useState<Record<string, number> | null>(null);
   const [error, setError] = useState<unknown>(null);
   const history = useQuery({ queryKey: ['roster-imports'], queryFn: () => admin.rosterImports(supabase) });
@@ -175,12 +175,19 @@ export default function RosterImport() {
             <details className="rounded-xl bg-sf2 p-4 text-sm"><summary className="cursor-pointer font-semibold">{preview.issues.length} rows need attention (they&apos;ll be skipped)</summary>
               <ul className="mt-2 space-y-1">{preview.issues.slice(0, 50).map((x, i) => <li key={i}>Row {x.row}: {x.problem}</li>)}</ul></details>
           ) : null}
+          {preview.removed_guardian_links ? (
+            <div className="flex gap-2 rounded-xl bg-sf2 p-4 text-sm"><AlertTriangle className="size-5 shrink-0" />
+              <div><b>{preview.removed_guardian_links}</b> family contact{preview.removed_guardian_links === 1 ? ' is' : 's are'} no longer listed for their student and will stop receiving posts and messages. Contacts the office set up by hand aren&apos;t changed.</div></div>
+          ) : null}
           <label className="flex items-start gap-3 text-[15px] cursor-pointer">
             <input type="checkbox" className="size-5 mt-0.5" checked={deactivate} onChange={(e) => setDeactivate(e.target.checked)} />
             <span>Mark the <b>{preview.deactivated_students}</b> students who aren&apos;t in this file as no longer enrolled. Their families stop receiving class posts. Nothing is deleted.</span>
           </label>
           <div className="flex gap-2">
-            <Button loading={applyM.isPending} onClick={() => applyM.mutate()}>Apply changes</Button>
+            <Button loading={applyM.isPending} onClick={() => {
+              if (deactivate && !confirm(`Mark ${preview.deactivated_students} students who aren't in this file as no longer enrolled? Their families will stop receiving posts. You can undo this import afterwards.`)) return;
+              applyM.mutate();
+            }}>Apply changes</Button>
             <Button variant="secondary" onClick={() => setStep(1)}>Back</Button>
           </div>
         </Card>
@@ -190,7 +197,7 @@ export default function RosterImport() {
         <Card className="p-8 text-center space-y-3">
           <CheckCircle2 className="size-10 text-ok mx-auto" />
           <h2 className="text-2xl font-bold">Roster updated</h2>
-          <p className="text-tx2">{result.new_students} new students, {result.updated_students} updated, {result.new_guardians} new family contacts, {result.deactivated_students} marked not enrolled.</p>
+          <p className="text-tx2">{result.new_students} new students, {result.updated_students} updated, {result.new_guardians} new family contacts, {result.removed_guardian_links ?? 0} contacts removed, {result.deactivated_students} marked not enrolled.</p>
           <p className="text-sm text-tx2">Families can sign in with the email on file right away. You can undo this import below.</p>
           <Button variant="secondary" onClick={reset}>Import another file</Button>
         </Card>
@@ -206,7 +213,7 @@ export default function RosterImport() {
               <div className="text-sm text-tx2">{new Date(h.created_at).toLocaleString()} · {h.summary?.rows ?? 0} rows</div></div>
             <Badge tone={h.status === 'applied' ? 'ok' : 'neutral'}>{h.status}</Badge>
             {h.status === 'applied' && i === (history.data ?? []).findIndex((x) => x.status === 'applied') ? (
-              <Button variant="ghost" icon={RotateCcw} loading={revertM.isPending} onClick={() => { if (confirm('Undo this import? Students and contacts it added are removed, and anyone it marked not enrolled is restored.')) revertM.mutate(h.id); }}>Undo</Button>
+              <Button variant="ghost" icon={RotateCcw} loading={revertM.isPending} onClick={() => { if (confirm('Undo this import? Students and contacts it added are removed, and anyone it marked not enrolled or removed is restored.')) revertM.mutate(h.id); }}>Undo</Button>
             ) : null}
           </div>
         ))}

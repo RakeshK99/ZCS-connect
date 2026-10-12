@@ -4,7 +4,7 @@ import { api, fileSize, type AudienceOption, type Priority } from '@zcs/core';
 import { FileText, Image as ImageIcon, Paperclip, Pin, Send, Siren, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Card, ErrorNote, Input, Label, PageHeader, Textarea, cx } from '@/components/ui';
+import { Badge, Button, Card, Empty, ErrorNote, Input, Label, PageHeader, Textarea, cx } from '@/components/ui';
 import { useStaff } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 
@@ -64,6 +64,15 @@ export default function Compose() {
       setConfirmEmergency(false);
     }
   };
+
+  if (audiences.isSuccess && options.length === 0) {
+    return (
+      <>
+        <PageHeader title="New announcement" />
+        <Card><Empty icon={Send} title="Your role doesn’t send announcements" body="Sending is for the office, principals and teachers. An admin can grant the office role in People & roles if you need it." /></Card>
+      </>
+    );
+  }
 
   return (
     <>
