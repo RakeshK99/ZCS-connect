@@ -17,6 +17,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 
 type Job = {
   msg_id: number | null;
+  attempt?: number;
   job: { kind: "post" | "message"; post_id?: string; message_id?: string; person_id: string; channel: "push" | "email"; context: string };
   action: "push" | "email" | "skip";
   reason: string | null;
@@ -43,6 +44,9 @@ type Result = {
   provider_id?: string;
   detail?: string;
   invalid_tokens?: string[];
+  device_token?: string;
+  /** retryable failure (rate limit, provider outage, timeout): the job stays queued with backoff */
+  retry?: boolean;
 };
 
 const EXPO_TOKEN = Deno.env.get("EXPO_ACCESS_TOKEN");
@@ -50,6 +54,12 @@ const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
 const EMAIL_FROM = Deno.env.get("EMAIL_FROM") ?? "ZCS Connect <notify@zcs.org>";
 const APP_LINK_BASE = Deno.env.get("APP_LINK_BASE") ?? "zcsconnect:/";
 const TIME_BUDGET_MS = 45_000;
+const FETCH_TIMEOUT_MS = 15_000;
+const EMAIL_BATCH = 100;          // Resend batch endpoint limit
+const EMAIL_BATCH_GAP_MS = 600;   // stay under Resend's default 2 requests/second
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const retryable = (status: number) => status === 429 || status >= 500;
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
@@ -64,8 +74,9 @@ function expoHeaders() {
   return h;
 }
 
-async function sendPushBatch(jobs: Job[]): Promise<Result[]> {
-  // One Expo message per device token; results folded back per job.
+async function sendPushBatch(jobs: Job[]): Promise<{ results: Result[]; fallbackEmail: Job[] }> {
+  // One Expo message per device token. Each ticket becomes its own delivery row
+  // (with its token) so receipts can prune devices that were uninstalled.
   const messages: { jobIndex: number; token: string; payload: Record<string, unknown> }[] = [];
   jobs.forEach((j, jobIndex) => {
     for (const token of j.tokens) {
@@ -88,35 +99,62 @@ async function sendPushBatch(jobs: Job[]): Promise<Result[]> {
     }
   });
 
-  const results: Result[] = jobs.map((j) => ({
-    msg_id: j.msg_id, post_id: j.job.post_id, message_id: j.job.message_id, person_id: j.job.person_id,
-    channel: "push", status: "failed", invalid_tokens: [],
-  }));
+  const base = (j: Job): Result => ({ msg_id: j.msg_id, post_id: j.job.post_id, message_id: j.job.message_id, person_id: j.job.person_id, channel: "push", status: "failed" });
+  const perJob: { sent: Result[]; failed: Result[]; retry: boolean; invalid: string[] }[] = jobs.map(() => ({ sent: [], failed: [], retry: false, invalid: [] }));
 
   for (let i = 0; i < messages.length; i += 100) {
     const chunk = messages.slice(i, i + 100);
     try {
       const res = await fetch("https://exp.host/--/api/v2/push/send", {
         method: "POST", headers: expoHeaders(), body: JSON.stringify(chunk.map((m) => m.payload)),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
+      if (!res.ok) {
+        const transient = retryable(res.status);
+        chunk.forEach((m) => {
+          if (transient) perJob[m.jobIndex].retry = true;
+          else perJob[m.jobIndex].failed.push({ ...base(jobs[m.jobIndex]), device_token: m.token, detail: `push ${res.status}` });
+        });
+        continue;
+      }
       const json = await res.json();
       const tickets: { status: string; id?: string; message?: string; details?: { error?: string } }[] = json.data ?? [];
-      tickets.forEach((t, k) => {
-        const m = chunk[k];
-        const r = results[m.jobIndex];
-        if (t.status === "ok") {
-          r.status = "sent";
-          r.provider_id = r.provider_id ?? t.id;
+      chunk.forEach((m, k) => {
+        const t = tickets[k];
+        const out = perJob[m.jobIndex];
+        if (t?.status === "ok") {
+          out.sent.push({ ...base(jobs[m.jobIndex]), status: "sent", provider_id: t.id, device_token: m.token });
+        } else if (t?.details?.error === "DeviceNotRegistered") {
+          out.invalid.push(m.token);
+        } else if (t?.details?.error === "MessageRateExceeded") {
+          out.retry = true;
         } else {
-          if (t.details?.error === "DeviceNotRegistered") r.invalid_tokens!.push(m.token);
-          if (r.status !== "sent") r.detail = t.details?.error ?? t.message ?? "push failed";
+          out.failed.push({ ...base(jobs[m.jobIndex]), device_token: m.token, detail: t?.details?.error ?? t?.message ?? "push failed" });
         }
       });
     } catch (e) {
-      chunk.forEach((m) => { results[m.jobIndex].detail = `push error: ${(e as Error).message}`; });
+      // network error or timeout: try the whole chunk again later
+      chunk.forEach((m) => { perJob[m.jobIndex].retry = true; perJob[m.jobIndex].failed.push({ ...base(jobs[m.jobIndex]), detail: `push error: ${(e as Error).message}` }); });
     }
   }
-  return results;
+
+  const results: Result[] = [];
+  const fallbackEmail: Job[] = [];
+  perJob.forEach((o, i) => {
+    const j = jobs[i];
+    if (o.sent.length) {
+      // at least one device got it: record the tickets (and prune dead tokens)
+      results.push(...o.sent.map((r, k) => (k === 0 ? { ...r, invalid_tokens: o.invalid } : r)));
+    } else if (o.retry) {
+      results.push({ ...base(j), status: "failed", detail: o.failed[0]?.detail ?? "push temporarily unavailable", retry: true, invalid_tokens: o.invalid });
+    } else {
+      // every device failed for good: record it, prune dead tokens, and email instead
+      // (emergencies already have their own email job, so they don't get a second one)
+      results.push({ ...base(j), status: "failed", detail: o.failed[0]?.detail ?? "no working device", invalid_tokens: o.invalid });
+      if (j.priority !== "emergency") fallbackEmail.push({ ...j, action: "email", msg_id: null });
+    }
+  });
+  return { results, fallbackEmail };
 }
 
 function escapeHtml(s: string) {
@@ -143,27 +181,57 @@ You're receiving this because you're listed as a ZCS family contact. Install the
 </td></tr></table></td></tr></table></body></html>`;
 }
 
-async function sendEmail(j: Job): Promise<Result> {
-  const base: Result = { msg_id: j.msg_id, post_id: j.job.post_id, message_id: j.job.message_id, person_id: j.job.person_id, channel: "email", status: "skipped" };
-  if (isTestAddress(j.email)) return { ...base, detail: "test address" };
-  if (!RESEND_KEY) return { ...base, detail: "email not configured" };
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: EMAIL_FROM, to: [j.email],
-        subject: j.priority === "emergency" ? `EMERGENCY: ${j.title.replace(/^Emergency · /, "")}` : j.title,
-        html: emailHtml(j),
-        headers: { "X-Entity-Ref-ID": `${j.job.kind}-${j.job.post_id ?? j.job.message_id}-${j.job.person_id}` },
-      }),
-    });
-    const json = await res.json();
-    if (!res.ok) return { ...base, status: "failed", detail: json?.message ?? `email ${res.status}` };
-    return { ...base, status: "sent", provider_id: json.id };
-  } catch (e) {
-    return { ...base, status: "failed", detail: `email error: ${(e as Error).message}` };
+function emailPayload(j: Job) {
+  return {
+    from: EMAIL_FROM, to: [j.email],
+    subject: j.priority === "emergency" ? `EMERGENCY: ${j.title.replace(/^Emergency · /, "")}` : j.title,
+    html: emailHtml(j),
+    headers: { "X-Entity-Ref-ID": `${j.job.kind}-${j.job.post_id ?? j.job.message_id}-${j.job.person_id}` },
+  };
+}
+
+async function sha256(s: string) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Sends through Resend's batch endpoint (100 per request), paced under the rate
+// limit. A batch that hits a rate limit or outage is retried later; the
+// idempotency key stops a retried batch from being delivered twice.
+async function sendEmails(jobs: Job[]): Promise<Result[]> {
+  const base = (j: Job): Result => ({ msg_id: j.msg_id, post_id: j.job.post_id, message_id: j.job.message_id, person_id: j.job.person_id, channel: "email", status: "skipped" });
+  const results: Result[] = [];
+  const sendable: Job[] = [];
+  for (const j of jobs) {
+    if (!j.email || isTestAddress(j.email)) results.push({ ...base(j), detail: "test address" });
+    else if (!RESEND_KEY) results.push({ ...base(j), detail: "email not configured" });
+    else sendable.push(j);
   }
+  for (let i = 0; i < sendable.length; i += EMAIL_BATCH) {
+    const chunk = sendable.slice(i, i + EMAIL_BATCH);
+    if (i > 0) await sleep(EMAIL_BATCH_GAP_MS);
+    const key = await sha256(chunk.map((j) => `${j.job.kind}:${j.job.post_id ?? j.job.message_id}:${j.job.person_id}:${(j.job as { reminder?: boolean }).reminder ? "r" : ""}`).sort().join("|"));
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json", "Idempotency-Key": key },
+        body: JSON.stringify(chunk.map(emailPayload)),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = json?.message ?? `email ${res.status}`;
+        chunk.forEach((j) => results.push({ ...base(j), status: "failed", detail, retry: retryable(res.status) }));
+        if (res.status === 429) await sleep(1000);
+        continue;
+      }
+      const ids: { id: string }[] = json.data ?? [];
+      chunk.forEach((j, k) => results.push({ ...base(j), status: "sent", provider_id: ids[k]?.id }));
+    } catch (e) {
+      chunk.forEach((j) => results.push({ ...base(j), status: "failed", detail: `email error: ${(e as Error).message}`, retry: true }));
+    }
+  }
+  return results;
 }
 
 async function processBatch(jobs: Job[]) {
@@ -175,15 +243,11 @@ async function processBatch(jobs: Job[]) {
       channel: j.job.channel, status: "skipped", detail: j.reason ?? undefined });
   }
   if (push.length) {
-    const pushResults = await sendPushBatch(push);
-    pushResults.forEach((r, i) => {
-      results.push(r);
-      // every token failed → fall back to email right away
-      if (r.status !== "sent") email.push({ ...push[i], action: "email", msg_id: null });
-    });
+    const { results: pushResults, fallbackEmail } = await sendPushBatch(push);
+    results.push(...pushResults);
+    email.push(...fallbackEmail);
   }
-  const emailResults = await Promise.all(email.map(sendEmail));
-  results.push(...emailResults);
+  results.push(...(await sendEmails(email)));
   const { error } = await db.rpc("worker_complete", { p_results: results });
   if (error) throw error;
   return results;
@@ -195,7 +259,9 @@ async function pollReceipts() {
   if (!rows.length) return 0;
   const res = await fetch("https://exp.host/--/api/v2/push/getReceipts", {
     method: "POST", headers: expoHeaders(), body: JSON.stringify({ ids: rows.map((r) => r.provider_id) }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
+  if (!res.ok) return 0;
   const json = await res.json();
   const receipts = json.data ?? {};
   const updates = rows.filter((r) => receipts[r.provider_id]).map((r) => {
