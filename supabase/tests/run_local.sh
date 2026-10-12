@@ -18,6 +18,11 @@ for f in "$SUPA"/migrations/*.sql; do
   sed -E '/^create extension if not exists (pgmq|pg_cron|pg_net)/d' "$f" | "${PSQL[@]}" -f - >/dev/null || { echo "migration failed: $f"; exit 1; }
 done
 "${PSQL[@]}" -f "$SUPA/seed/demo_school.sql" >/dev/null
+if [ -n "${BENCH:-}" ]; then
+  "${PSQL[@]}" -f "$HERE/bench/load_school.sql" >/dev/null
+  "${PSQL[@]}" -t -A -F ' | ' -f "$HERE/bench/measure.sql" | grep ' | '
+  exit 0
+fi
 for t in "$HERE"/*_test.sql; do
   echo "== $(basename "$t")"
   "${PSQL[@]}" -t -A -f "$t" | grep -E 'PASS|FAIL' | tee -a "$WORK/out.txt"

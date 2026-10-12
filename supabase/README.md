@@ -31,3 +31,13 @@ psql "$DB_URL" -f supabase/tests/permissions_test.sql
 ```
 
 Before loading the real roster: `select private.remove_demo_data();`
+
+## Tests and benchmarks
+
+```bash
+supabase/tests/run_local.sh          # migrations + demo seed + every *_test.sql (85 checks), on a throwaway PostgreSQL
+BENCH=1 supabase/tests/run_local.sh  # scales the demo school to ~1,000 students / ~2,000 guardians and times the hot paths
+```
+
+Both run on plain PostgreSQL 16+ with small stand-ins for the Supabase platform (`tests/local/platform_stubs.sql`),
+so they work locally and in CI without Docker. CI runs the tests on every pull request.
