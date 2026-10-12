@@ -8,8 +8,10 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { useEffect, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
 
+// On web, NetInfo's reachability probe is a HEAD request to the site root, which
+// 404s on static hosts (and reads as "offline"), so trust navigator.onLine there.
 onlineManager.setEventListener((setOnline) =>
-  NetInfo.addEventListener((s) => setOnline(s.isConnected !== false && s.isInternetReachable !== false)),
+  NetInfo.addEventListener((s) => setOnline(s.isConnected !== false && (Platform.OS === 'web' || s.isInternetReachable !== false))),
 );
 
 export const queryClient = new QueryClient({

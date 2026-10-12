@@ -41,6 +41,9 @@ const webStorage = typeof window !== 'undefined' ? window.localStorage : undefin
 export const supabase = createClient(extra.supabaseUrl, extra.supabaseKey, {
   auth: {
     storage: Platform.OS === 'web' ? webStorage : secureStorage,
+    // Separate key on web so the app and the staff console can be signed in as
+    // different people when served from the same origin (the playground).
+    ...(Platform.OS === 'web' ? { storageKey: 'zcs-app-auth' } : {}),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
