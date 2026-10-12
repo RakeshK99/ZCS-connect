@@ -52,7 +52,7 @@ export default function Profile() {
 
   const confirmDelete = () => Alert.alert(
     'Delete your account?',
-    'This removes your sign-in and notification settings from ZCS Connect. Your children stay on the school roster, and the office can reconnect you later.',
+    'This deletes your ZCS Connect account: your sign-in, devices, notification settings and read history. The school keeps the contact details it has on file for your family and its own records, such as your messages with teachers. You can sign in again later with the same email.',
     [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete account', style: 'destructive', onPress: async () => {
