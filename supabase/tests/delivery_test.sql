@@ -91,9 +91,11 @@ values ((select id from public.posts where title = 'Library books'), pg_temp.per
 select private.queue_email_fallbacks();
 select pg_temp.check('fallback email waits for quiet hours to end',
   exists (select 1 from pgmq.q_notify q where q.message->>'person_id' = pg_temp.person('rakesh+sarah@syzygy.services')::text
+          and q.message->>'post_id' = (select id from public.posts where title = 'Library books')::text
           and q.message->>'channel' = 'email' and q.vt > now() + interval '90 minutes'));
 select pg_temp.check('fallback waits 15 minutes after the push actually went out',
-  not exists (select 1 from pgmq.q_notify q where q.message->>'person_id' = pg_temp.person('mark.vandyke@example.com')::text));
+  not exists (select 1 from pgmq.q_notify q where q.message->>'person_id' = pg_temp.person('mark.vandyke@example.com')::text
+              and q.message->>'post_id' = (select id from public.posts where title = 'Library books')::text));
 delete from pgmq.q_notify;
 
 -- ---------------------------------------------------------------- preferences apply to fallback email
