@@ -1,13 +1,13 @@
 # Supabase backend
 
-Project: **ZCS Connect** (`rajiykcsrybkddbutctb`, ca-central-1).
+Project: **ZCS Connect** (`bymugelbfznkynivvckp`, us-east-1, SYZYGY-services organization, Pro plan). Setup runbook: [`docs/SUPABASE_SETUP.md`](../docs/SUPABASE_SETUP.md).
 
 | Path | What it is |
 | --- | --- |
 | `migrations/` | Schema, row-level security, RPCs, delivery queue, cron jobs. Source of truth; apply in order. |
 | `functions/deliver/` | Edge Function that drains the `notify` queue and sends push (Expo) and email. |
 | `seed/demo_school.sql` | Fictional demo school for development, the pilot walkthrough and App Store review. |
-| `tests/permissions_test.sql` | 44 allow/deny checks across every role. Runs in a transaction and rolls back. |
+| `tests/*_test.sql` | 85 checks: permissions (allow and deny for every role), delivery pipeline, account lifecycle. Each runs in a transaction and rolls back. |
 
 ## Security model in one paragraph
 
