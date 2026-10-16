@@ -9,7 +9,7 @@ REPO_PATH="/${PAGES_REPO:-ZCS-connect}"
 rm -rf "$OUT" && mkdir -p "$OUT"
 
 ( cd "$ROOT/apps/mobile" && EXPO_PUBLIC_DEMO_LOGIN=1 EXPO_BASE_URL="$REPO_PATH/app" \
-    npx expo export --platform web --output-dir "$OUT/app" )
+    npx expo export --platform web --clear --output-dir "$OUT/app" )
 
 ( cd "$ROOT/apps/console" && rm -rf .next out && PLAYGROUND=1 NEXT_PUBLIC_DEMO_LOGIN=1 \
     NEXT_PUBLIC_BASE_PATH="$REPO_PATH/console" NEXT_TELEMETRY_DISABLED=1 npx next build && cp -r out "$OUT/console" )
