@@ -3,11 +3,11 @@
 Everything in the code is built. These are the account and dashboard settings only a person can do.
 Do them in this order; Apple Developer is last, as agreed.
 
-## 1. Supabase (project `rajiykcsrybkddbutctb`)
+## 1. Supabase (project `bymugelbfznkynivvckp`)
 
-1. **Plan:** upgrade to **Pro** before real families sign in. Free projects pause after a week idle and
-   have no daily backups. Pro covers 5,000 families with plenty of room (the busiest moment, an
-   emergency alert to every family, is about 5–10k push messages, which the queue sends in batches).
+1. **Plan:** ✅ done. The project lives in the **SYZYGY-services** organization on the **Pro** plan (daily
+   backups, never pauses). Schema, demo school, delivery worker and Vault secrets are set up; see
+   [`SUPABASE_SETUP.md`](SUPABASE_SETUP.md). Pro covers 5,000 families with plenty of room.
 2. **Auth → Email:**
    - Turn on **Email OTP**. In *Email Templates → Magic Link*, make the body show the code:
      `Your ZCS Connect code is {{ .Token }}. It expires in 10 minutes.`
@@ -16,7 +16,7 @@ Do them in this order; Apple Developer is last, as agreed.
      which is rate-limited and often lands in spam.
 3. **Auth → Providers:**
    - **Google:** create an OAuth client in the ZCS Google Cloud project (Web application). Authorized
-     redirect URI: `https://rajiykcsrybkddbutctb.supabase.co/auth/v1/callback`. Paste the client ID
+     redirect URI: `https://bymugelbfznkynivvckp.supabase.co/auth/v1/callback`. Paste the client ID
      and secret into Supabase.
    - **Apple:** done in step 6, once the Apple Developer account exists.
 4. **Auth → URL configuration:**

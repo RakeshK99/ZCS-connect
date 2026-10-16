@@ -2,8 +2,8 @@ import type { ExpoConfig } from 'expo/config';
 
 // Public values only. The Supabase publishable key is safe to ship: every table
 // is protected by row-level security and writes go through permission-checked RPCs.
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://rajiykcsrybkddbutctb.supabase.co';
-const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? 'sb_publishable_3FdKyAmB2gXG_KqYvxQJDw_IvAyUGQL';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://bymugelbfznkynivvckp.supabase.co';
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? 'sb_publishable_urP4CiiM2NU1eojT8bFVdw_VW8Sm-5d';
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? '';
 
 const config: ExpoConfig = {
