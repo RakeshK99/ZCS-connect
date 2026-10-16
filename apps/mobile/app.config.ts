@@ -45,7 +45,7 @@ const config: ExpoConfig = {
     blockedPermissions: ['android.permission.RECORD_AUDIO'],
     predictiveBackGestureEnabled: false,
   },
-  web: { favicon: './assets/favicon.png' },
+  web: { favicon: './assets/favicon.png', output: 'single' },
   plugins: [
     'expo-router',
     'expo-font',
@@ -58,7 +58,8 @@ const config: ExpoConfig = {
     ['expo-image-picker', { photosPermission: 'ZCS Connect uses your photos so you can attach them to posts.', cameraPermission: false, microphonePermission: false }],
     ['expo-calendar', { calendarPermission: 'ZCS Connect adds school events you choose to your calendar.' }],
   ],
-  experiments: { typedRoutes: true },
+  // EXPO_BASE_URL serves the web playground under a sub-path (GitHub Pages).
+  experiments: { typedRoutes: true, ...(process.env.EXPO_BASE_URL ? { baseUrl: process.env.EXPO_BASE_URL } : {}) },
   extra: {
     supabaseUrl: SUPABASE_URL,
     supabaseKey: SUPABASE_KEY,

@@ -37,7 +37,7 @@ export default function ConsoleLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex">
       <aside className="w-64 shrink-0 bg-navy text-white flex flex-col sticky top-0 h-screen">
         <div className="flex items-center gap-3 px-5 h-16">
-          <img src="/zcs-icon-maize.svg" alt="" className="size-8" />
+          <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/zcs-icon-maize.svg`} alt="" className="size-8" />
           <div>
             <div className="font-heading font-bold text-lg leading-none">ZCS Connect</div>
             <div className="text-white/60 text-xs mt-1">Staff console</div>
