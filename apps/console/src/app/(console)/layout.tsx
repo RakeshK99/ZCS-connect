@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { admin } from '@zcs/core';
-import { CalendarDays, FileSpreadsheet, LayoutDashboard, LogOut, MessagesSquare, ScrollText, SquarePen, UserPlus, Users, type LucideIcon } from 'lucide-react';
+import { CalendarDays, Contact, FileSpreadsheet, LayoutDashboard, LogOut, MessagesSquare, ScrollText, SquarePen, UserPlus, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
@@ -24,8 +24,9 @@ export default function ConsoleLayout({ children }: { children: ReactNode }) {
   const principal = staff.roles.includes('principal');
   const nav: Nav[] = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard, show: office || principal },
-    { href: '/compose', label: 'New announcement', icon: SquarePen, show: true },
+    { href: '/compose', label: 'New announcement', icon: SquarePen, show: staff.roles.some((r) => r !== 'admin') },
     { href: '/families', label: 'Family requests', icon: UserPlus, show: office, badge: pending },
+    { href: '/students', label: 'Students & guardians', icon: Contact, show: office },
     { href: '/roster', label: 'Roster import', icon: FileSpreadsheet, show: office },
     { href: '/people', label: 'People & roles', icon: Users, show: office },
     { href: '/calendar', label: 'School calendar', icon: CalendarDays, show: office },

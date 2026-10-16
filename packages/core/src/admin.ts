@@ -29,7 +29,7 @@ export interface RosterRow {
 }
 export interface RosterPreview {
   import_id: string; rows: number; new_students: number; updated_students: number; unchanged_students: number;
-  deactivated_students: number; new_guardians: number; guardian_links: number; shared_guardians: number;
+  deactivated_students: number; new_guardians: number; guardian_links: number; removed_guardian_links: number; shared_guardians: number;
   unmatched_grades: string[]; issues: { row: number; problem: string }[];
 }
 export interface RosterImport { id: string; file_name: string; status: string; summary: RosterPreview | null; created_at: string; applied_at: string | null; reverted_at: string | null }
@@ -42,6 +42,11 @@ export interface OversightThread { id: string; student: string; grade: string | 
 export interface OversightMessage { id: string; sender: string; sender_context: 'parent' | 'staff'; body: string; created_at: string }
 export interface AuditRow { id: number; action: string; target_type: string | null; target_id: string | null; detail: Record<string, unknown>; at: string; actor_id: string | null }
 export interface Option { id: string; label: string }
+export interface GuardianLink {
+  id: string; person_id: string; name: string; email: string; relationship: string; no_contact: boolean; hide_contact: boolean;
+  can_sign_forms: boolean; locked_by_office: boolean; source: 'import' | 'office'; is_active: boolean; signed_in: boolean;
+}
+export interface StudentGuardians { id: string; name: string; grade: string | null; is_active: boolean; guardians: GuardianLink[] }
 
 export const admin = {
   stats: (db: SupabaseClient) => rpc<SchoolStats>(db, 'school_stats'),
@@ -57,6 +62,11 @@ export const admin = {
   familyRequests: (db: SupabaseClient) => rpc<FamilyRequest[]>(db, 'family_requests_queue'),
   resolveFamilyRequest: (db: SupabaseClient, id: string, approve: boolean, studentIds: string[] = [], first = '', last = '', relationship = 'guardian') =>
     rpc<void>(db, 'resolve_family_request', { p_request: id, p_approve: approve, p_student_ids: studentIds, p_first: first, p_last: last, p_relationship: relationship }),
+
+  studentGuardians: (db: SupabaseClient, query: string) => rpc<StudentGuardians[]>(db, 'office_student_guardians', { p_query: query }),
+  setGuardianFlags: (db: SupabaseClient, id: string, f: { noContact: boolean; hideContact: boolean; canSign: boolean }) =>
+    rpc<void>(db, 'update_guardianship_flags', { p_guardianship: id, p_no_contact: f.noContact, p_hide_contact: f.hideContact, p_can_sign: f.canSign }),
+  setGuardianActive: (db: SupabaseClient, id: string, active: boolean) => rpc<void>(db, 'set_guardianship_active', { p_guardianship: id, p_active: active }),
 
   previewRoster: (db: SupabaseClient, fileName: string, rows: RosterRow[]) => rpc<RosterPreview>(db, 'preview_roster_import', { p_file_name: fileName, p_rows: rows }),
   applyRoster: (db: SupabaseClient, id: string, deactivateMissing: boolean) =>
