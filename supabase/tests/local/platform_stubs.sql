@@ -69,7 +69,7 @@ begin
 end $$;
 create function pgmq.send(queue_name text, msg jsonb, delay int default 0) returns setof bigint language plpgsql as $$
 begin
-  return query execute format('insert into pgmq.%I (vt, message) values (now() + make_interval(secs => $1), $2) returning msg_id',
+  return query execute format('insert into pgmq.%I (vt, message) values (clock_timestamp() + make_interval(secs => $1), $2) returning msg_id',
                               'q_' || queue_name) using delay, msg;
 end $$;
 create function pgmq.read(queue_name text, vt int, qty int) returns setof pgmq.message_record language plpgsql as $$
