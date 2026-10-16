@@ -29,17 +29,7 @@ begin
 end $$;
 revoke execute on function private.seed_thread(uuid, uuid, uuid, public.app_context, uuid, public.app_context, text[][]) from authenticated;
 
--- Removes every fictional demo record (run before importing the real roster).
-create or replace function private.remove_demo_data() returns void
-language plpgsql security definer set search_path = '' as $$
-begin
-  delete from public.posts where author_id in (select id from public.people where email like '%@example.com' or email like 'rakesh+%@syzygy.services');
-  delete from public.threads where student_id in (select id from public.students where sis_id like 'DEMO-%');
-  delete from public.students where sis_id like 'DEMO-%';
-  delete from public.people where (email like '%@example.com' or email like 'rakesh+%@syzygy.services');
-  delete from public.classes where code in ('3S','KD','6B','CH');
-end $$;
-revoke execute on function private.remove_demo_data() from authenticated;
+-- private.remove_demo_data() (defined in migration 20261011000003) removes all of this before launch.
 
 do $seed$
 declare

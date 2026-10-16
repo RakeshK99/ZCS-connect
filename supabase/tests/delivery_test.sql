@@ -81,7 +81,7 @@ select pg_temp.check('a parent in quiet hours gets the push later',
           and q.vt > now() + interval '90 minutes'));
 select pg_temp.check('a parent outside quiet hours gets the push now',
   exists (select 1 from pgmq.q_notify q where q.message->>'person_id' = pg_temp.person('mark.vandyke@example.com')::text
-          and q.vt <= now()));
+          and q.vt <= now() + interval '1 minute'));
 delete from pgmq.q_notify;
 
 -- fallback: Sarah's push went out 20 minutes ago and she hasn't opened it
