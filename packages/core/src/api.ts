@@ -32,10 +32,11 @@ export const api = {
   deleteMyAccount: (db: SupabaseClient) => rpc<void>(db, 'delete_my_account'),
 
   // feed & posts
-  feed: (db: SupabaseClient, context: ContextKey, opts: { studentId?: string | null; query?: string | null; before?: string | null; limit?: number } = {}) =>
+  /** Newest first. To page, pass the last post's `sent_at` and `id` as `before` / `beforeId`. */
+  feed: (db: SupabaseClient, context: ContextKey, opts: { studentId?: string | null; query?: string | null; before?: string | null; beforeId?: string | null; limit?: number } = {}) =>
     rpc<FeedPost[]>(db, 'feed', {
       p_context: context, p_student: opts.studentId ?? null, p_query: opts.query || null,
-      p_limit: opts.limit ?? 50, p_before: opts.before ?? null,
+      p_limit: opts.limit ?? 50, p_before: opts.before ?? null, p_before_id: opts.beforeId ?? null,
     }),
   markRead: (db: SupabaseClient, postId: string) => rpc<void>(db, 'mark_post_read', { p_post: postId }),
   acknowledge: (db: SupabaseClient, postId: string) => rpc<string>(db, 'acknowledge_post', { p_post: postId }),
@@ -66,10 +67,11 @@ export const api = {
   sendMessage: (db: SupabaseClient, threadId: string, body: string) => rpc<string>(db, 'send_message', { p_thread: threadId, p_body: body }),
   markThreadRead: (db: SupabaseClient, threadId: string) => rpc<void>(db, 'mark_thread_read', { p_thread: threadId }),
   threadMessages: async (db: SupabaseClient, threadId: string): Promise<Message[]> => {
+    // newest 500, returned oldest-first for display
     const { data, error } = await db.from('messages').select('id, thread_id, sender_id, body, created_at')
-      .eq('thread_id', threadId).order('created_at', { ascending: true }).limit(500);
+      .eq('thread_id', threadId).order('created_at', { ascending: false }).limit(500);
     if (error) throw new ApiError(friendly(error.message), error.code);
-    return data as Message[];
+    return (data as Message[]).reverse();
   },
 
   // calendar
