@@ -4,11 +4,14 @@ import type { ExpoConfig } from 'expo/config';
 // is protected by row-level security and writes go through permission-checked RPCs.
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://bymugelbfznkynivvckp.supabase.co';
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? 'sb_publishable_urP4CiiM2NU1eojT8bFVdw_VW8Sm-5d';
-const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? '';
+// EAS project @rakesh.vk/zcs-connect (move to a ZCS-owned Expo account before launch).
+const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? 'fa7ca4a7-40d6-42f9-9514-e3e09e0e3358';
+const EAS_OWNER = process.env.EAS_OWNER ?? 'rakesh.vk';
 
 const config: ExpoConfig = {
   name: 'ZCS Connect',
   slug: 'zcs-connect',
+  owner: EAS_OWNER,
   scheme: 'zcsconnect',
   version: '1.0.0',
   orientation: 'portrait',
@@ -63,7 +66,7 @@ const config: ExpoConfig = {
   extra: {
     supabaseUrl: SUPABASE_URL,
     supabaseKey: SUPABASE_KEY,
-    eas: { projectId: EAS_PROJECT_ID || undefined },
+    eas: { projectId: EAS_PROJECT_ID },
   },
 };
 
