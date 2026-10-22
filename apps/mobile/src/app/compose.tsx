@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { CircleCheck, Clock, ImagePlus, Mic, Pin, Send, Siren, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Animated, Dimensions, Keyboard, KeyboardAvoidingView, PanResponder, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Chip, H, IconButton } from '@/components/ui';
 import { useAudiences } from '@/lib/hooks';
@@ -62,7 +62,36 @@ export default function Compose() {
   const input = useRef<TextInput>(null);
   const y = useRef(new Animated.Value(Dimensions.get('window').height)).current;
 
+  const [keyboardUp, setKeyboardUp] = useState(false);
+  const draft = useRef({ text: '', photos: 0 });
+  draft.current = { text, photos: photos.length };
+
   useEffect(() => { Animated.spring(y, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 220 }).start(); }, [y]);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardUp(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardUp(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  // Close, asking first if there's a draft. `onKeep` runs when the teacher keeps editing.
+  const close = useRef((onKeep?: () => void) => {
+    const leave = () => { Keyboard.dismiss(); router.back(); };
+    if (!draft.current.text.trim() && !draft.current.photos) return leave();
+    Alert.alert('Discard this post?', "What you've written won't be saved.", [
+      { text: 'Keep editing', style: 'cancel', onPress: onKeep },
+      { text: 'Discard', style: 'destructive', onPress: leave },
+    ]);
+  }).current;
+
+  // Drag the grabber or header down to close, like a native sheet.
+  const springBack = () => Animated.spring(y, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 220 }).start();
+  const drag = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+    onPanResponderGrant: () => Keyboard.dismiss(),
+    onPanResponderMove: (_, g) => y.setValue(Math.max(0, g.dy)),
+    onPanResponderRelease: (_, g) => (g.dy > 120 || g.vy > 1 ? close(springBack) : springBack()),
+    onPanResponderTerminate: () => springBack(),
+  })).current;
 
   const options = useMemo(() => [...audiences].sort((a, b) => Number(b.mine ?? false) - Number(a.mine ?? false)), [audiences]);
   useEffect(() => {
@@ -75,7 +104,6 @@ export default function Compose() {
 
   const families = target?.type === 'class' ? staff.classes.find((k) => k.id === target.id)?.families : undefined;
   const priority: Priority = emergency ? 'emergency' : important ? 'important' : 'normal';
-  const close = () => router.back();
 
   const pickPhotos = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 10 - photos.length, quality: 0.7 });
@@ -117,14 +145,18 @@ export default function Compose() {
   const sendLabel = scheduled ? 'Schedule for tomorrow, 7:00 AM' : emergency ? 'Send emergency alert' : families ? `Send to ${families} families` : 'Send';
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end' }}>
-      <Pressable accessibilityLabel="Close" onPress={close} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.scrim }} />
-      <Animated.View accessibilityViewIsModal style={{ transform: [{ translateY: y }], height: Math.min(660, Dimensions.get('window').height - insets.top - 20),
-        backgroundColor: c.sf, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
-        <View style={{ width: 36, height: 5, borderRadius: 3, backgroundColor: c.bd, alignSelf: 'center', marginTop: 8, marginBottom: 4 }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 8, paddingVertical: 4 }}>
-          <H size={20}>Post to</H>
-          <IconButton icon={X} label="Close" color={c.tx2} onPress={close} />
+    // The sheet is 660pt tall at most and shrinks to fit between the status bar and the
+    // keyboard, so the header (and its close button) never goes off screen.
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', paddingTop: insets.top + 8 }}>
+      <Pressable accessibilityLabel="Close" onPress={() => close()} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.scrim }} />
+      <Animated.View accessibilityViewIsModal style={{ transform: [{ translateY: y }], flexBasis: 660, flexGrow: 0, flexShrink: 1, minHeight: 0,
+        backgroundColor: c.sf, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' }}>
+        <View {...drag.panHandlers}>
+          <View style={{ width: 36, height: 5, borderRadius: 3, backgroundColor: c.bd, alignSelf: 'center', marginTop: 8, marginBottom: 4 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 8, paddingVertical: 4 }}>
+            <H size={20}>Post to</H>
+            <IconButton icon={X} label="Close" color={c.tx2} onPress={() => close()} />
+          </View>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ flexGrow: 0 }}
           contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 }}>
@@ -174,7 +206,7 @@ export default function Compose() {
           <IconButton icon={Pin} label={important ? 'Important (pinned)' : 'Mark important'} color={important ? NAVY : c.link} bg={important ? MAIZE : undefined}
             onPress={() => setImportant((v) => !v)} />
         </View>
-        <View style={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: insets.bottom + 10 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: keyboardUp ? 10 : insets.bottom + 10 }}>
           <Pressable accessibilityRole="button" onPress={send} disabled={sending || !text.trim() || !target}
             style={({ pressed }) => ({ height: 54, borderRadius: 14, backgroundColor: emergency ? RED : c.pri, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
               opacity: sending || !text.trim() ? 0.5 : pressed ? 0.85 : 1 })}>

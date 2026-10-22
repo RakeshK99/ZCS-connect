@@ -16,10 +16,11 @@ export function Sheet({ visible, onClose, children, height }: { visible: boolean
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* Top padding keeps the sheet below the status bar when the keyboard is up. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', paddingTop: insets.top + 8 }}>
         <Pressable accessibilityLabel="Close" onPress={onClose} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.scrim }} />
         <Animated.View accessibilityViewIsModal style={{ transform: [{ translateY: y }], backgroundColor: c.sf, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-          paddingBottom: Math.max(insets.bottom, 16), height }}>
+          paddingBottom: Math.max(insets.bottom, 16), height, flexShrink: 1, minHeight: 0, overflow: 'hidden' }}>
           <View style={{ width: 36, height: 5, borderRadius: 3, backgroundColor: c.bd, alignSelf: 'center', marginTop: 8, marginBottom: 4 }} />
           {children}
         </Animated.View>
