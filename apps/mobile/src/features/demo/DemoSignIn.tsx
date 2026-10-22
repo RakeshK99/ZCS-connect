@@ -1,6 +1,7 @@
-// Playground-only sign-in for the fictional demo school. Rendered only when the
-// build sets EXPO_PUBLIC_DEMO_LOGIN=1 (the GitHub Pages web playground). Store
-// builds never set it, so families still sign in without passwords.
+// Sign-in for the fictional demo school. Rendered only when the build sets
+// EXPO_PUBLIC_DEMO_LOGIN=1: the GitHub Pages web playground and the TestFlight
+// beta (eas.json "demo" profile). The production profile never sets it, so
+// families still sign in without passwords.
 import { router } from 'expo-router';
 import { FlaskConical } from 'lucide-react-native';
 import { useState } from 'react';

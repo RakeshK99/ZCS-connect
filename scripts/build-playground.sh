@@ -16,5 +16,8 @@ rm -rf "$OUT" && mkdir -p "$OUT"
 
 cp "$OUT/app/index.html" "$OUT/404.html"   # deep links into the app fall back to the SPA
 cp "$ROOT/scripts/playground-index.html" "$OUT/index.html"
+mkdir -p "$OUT/privacy" "$OUT/support"   # beta privacy policy and support URLs
+cp "$ROOT/scripts/pages/privacy.html" "$OUT/privacy/index.html"
+cp "$ROOT/scripts/pages/support.html" "$OUT/support/index.html"
 touch "$OUT/.nojekyll"                      # keep _expo/ and _next/ folders
 echo "Built $OUT — publish it to the gh-pages branch."
