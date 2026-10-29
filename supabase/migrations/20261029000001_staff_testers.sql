@@ -23,7 +23,6 @@ begin
     delete from public.devices where person_id = v_me;
     delete from public.notification_prefs where person_id = v_me;
     delete from public.post_reads where person_id = v_me;
-    delete from public.post_saves where person_id = v_me;
     update public.thread_participants set last_read_at = null where person_id = v_me;
     update public.people set user_id = null, account_deleted_at = now() where id = v_me;
   end if;
