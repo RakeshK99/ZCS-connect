@@ -1,6 +1,6 @@
 import { initials, relativeTime, type FeedPost } from '@zcs/core';
 import { router } from 'expo-router';
-import { ChevronRight, CircleAlert, CircleCheck, FileText, Pin, Siren } from 'lucide-react-native';
+import { Bookmark, ChevronRight, CircleAlert, CircleCheck, FileText, Pin, Siren } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 import { Avatar, Card, Pill, Skeleton } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -27,7 +27,7 @@ export function PostCard({ post, viewerIsAuthor }: { post: FeedPost; viewerIsAut
   const showAck = post.require_ack && !mine;
   return (
     <Card onPress={() => router.push(`/post/${post.id}`)} borderColor={important ? MAIZE : undefined}
-      accessibilityLabel={`${important ? 'Important. ' : ''}${post.title}, from ${post.author}, ${relativeTime(post.sent_at)}${!post.read && !mine ? ', unread' : ''}`}
+      accessibilityLabel={`${important ? 'Important. ' : ''}${post.saved ? 'Saved. ' : ''}${post.title}, from ${post.author}, ${relativeTime(post.sent_at)}${!post.read && !mine ? ', unread' : ''}`}
       style={{ paddingVertical: 14, paddingHorizontal: 16, gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <Avatar text={initials(post.author)} size={36} />
@@ -35,6 +35,7 @@ export function PostCard({ post, viewerIsAuthor }: { post: FeedPost; viewerIsAut
           <Text style={{ fontSize: 15, fontWeight: '600', color: c.tx }}>{mine ? `You · ${post.author}` : post.author}</Text>
           <Text numberOfLines={1} style={{ fontSize: 13, color: c.tx2 }}>{mine ? `You posted to ${post.audience_label}` : post.audience_label} · {relativeTime(post.sent_at)}</Text>
         </View>
+        {post.saved ? <Bookmark accessibilityLabel="Saved" size={18} color={c.link} fill={c.link} /> : null}
         {important ? <Pill label="Important" icon={Pin} bg={MAIZE} fg={NAVY} /> : null}
         {!post.read && !mine && !important ? <View accessibilityLabel="Unread" style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c.badge }} /> : null}
       </View>

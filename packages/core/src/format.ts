@@ -68,3 +68,21 @@ export function fileSize(bytes: number): string {
 export function pct(n: number, total: number): number {
   return total > 0 ? Math.round((n / total) * 100) : 0;
 }
+
+/**
+ * Reads a time someone typed ("9", "9:30", "9am", "2:15 PM", "14:00") as "HH:MM".
+ * Bare hours 1–6 are read as afternoon (school events rarely start at 3 AM).
+ * Returns null when it isn't a time.
+ */
+export function parseTimeInput(text: string): string | null {
+  const m = text.trim().toLowerCase().replace(/\./g, '').match(/^(\d{1,2})(?::?(\d{2}))?\s*(am|pm|a|p)?$/);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const min = Number(m[2] ?? '0');
+  const ap = m[3]?.[0];
+  if (min > 59 || h > 23 || (ap && (h < 1 || h > 12))) return null;
+  if (ap === 'p' && h < 12) h += 12;
+  else if (ap === 'a' && h === 12) h = 0;
+  else if (!ap && h >= 1 && h <= 6) h += 12;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}

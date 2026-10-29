@@ -1,12 +1,16 @@
-import { isoDay, parseIsoDay, timeOfDay, type CalendarEvent } from '@zcs/core';
-import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { api, isStaff, isoDay, parseIsoDay, timeOfDay, type CalendarEvent } from '@zcs/core';
+import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { CalendarPlus, ChevronLeft, ChevronRight, Plus, Users } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconButton, ScreenTitle, SectionLabel, Segmented } from '@/components/ui';
+import { Button, IconButton, ScreenTitle, SectionLabel, Segmented } from '@/components/ui';
 import { useToast } from '@/components/Toast';
 import { addToPhoneCalendar } from '@/features/calendar/addToCalendar';
 import { useCalendar } from '@/lib/hooks';
+import { useLinked } from '@/lib/session';
+import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
 import { font } from '@/theme/tokens';
 
@@ -36,6 +40,20 @@ export default function CalendarScreen() {
   const [view, setView] = useState<'month' | 'agenda'>('month');
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [selected, setSelected] = useState(today);
+  const qc = useQueryClient();
+  const { linked, context } = useLinked();
+  const myClasses = isStaff(context) ? context.classes : [];
+  const classOf = (e: CalendarEvent) => myClasses.find((k) => e.audience_label?.startsWith(`${k.code} · `));
+  const canEdit = (e: CalendarEvent) => !!e.audience_label && (e.created_by === linked.person.id || !!classOf(e));
+
+  const manage = (e: CalendarEvent) => Alert.alert(e.title, e.audience_label ?? undefined, [
+    { text: 'Edit', onPress: () => router.push({ pathname: '/class-event', params: { event: JSON.stringify({ ...e, class_id: classOf(e)?.id }) } }) },
+    { text: 'Delete', style: 'destructive', onPress: async () => {
+      try { await api.deleteClassEvent(supabase, e.id); qc.invalidateQueries({ queryKey: ['calendar'] }); toast('Event deleted'); }
+      catch (err) { Alert.alert('Class event', (err as Error).message); }
+    } },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
 
   const from = view === 'month' ? month : new Date();
   const to = view === 'month' ? new Date(month.getFullYear(), month.getMonth() + 1, 0) : new Date(Date.now() + 120 * 86_400_000);
@@ -119,6 +137,12 @@ export default function CalendarScreen() {
           </View>
         ) : null}
 
+        {myClasses.length ? (
+          <Button label={view === 'month' ? `Add class event on ${parseIsoDay(selected).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'Add class event'}
+            icon={Plus} variant="secondary" height={48} style={{ marginTop: 14 }}
+            onPress={() => router.push({ pathname: '/class-event', params: { date: view === 'month' ? selected : today } })} />
+        ) : null}
+
         {agendaDays.map((day) => {
           const evs = events.filter((e) => occursOn(e, day));
           return (
@@ -129,12 +153,20 @@ export default function CalendarScreen() {
                   <Text style={{ fontSize: 15, color: c.tx2 }}>Nothing on the calendar this day.</Text>
                 </View>
               ) : evs.map((e) => (
-                <View key={e.id} style={{ backgroundColor: c.sf, borderWidth: 1, borderColor: c.bd, borderRadius: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12,
+                <Pressable key={e.id} disabled={!canEdit(e)} onPress={() => manage(e)} accessibilityRole={canEdit(e) ? 'button' : undefined}
+                  accessibilityHint={canEdit(e) ? 'Edit or delete this class event' : undefined}
+                  style={{ backgroundColor: c.sf, borderWidth: 1, borderColor: c.bd, borderRadius: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12,
                   paddingVertical: 10, paddingLeft: 14, paddingRight: 8, minHeight: 60 }}>
                   <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: e.no_school ? c.bdS : strong }} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 16, fontWeight: '600', color: c.tx }}>{e.title.replace(/^No school · /, '')}</Text>
                     <Text style={{ fontSize: 13, color: c.tx2, marginTop: 2 }}>{eventSub(e)}</Text>
+                    {e.audience_label ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                        <Users size={12} color={c.link} />
+                        <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: c.link, flexShrink: 1 }}>{e.audience_label}</Text>
+                      </View>
+                    ) : null}
                   </View>
                   {e.no_school ? (
                     <View style={{ backgroundColor: c.sf2, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
@@ -142,7 +174,7 @@ export default function CalendarScreen() {
                     </View>
                   ) : null}
                   <IconButton icon={CalendarPlus} label={`Add ${e.title} to phone calendar`} bg={c.tint} size={19} onPress={() => add(e)} />
-                </View>
+                </Pressable>
               ))}
             </View>
           );

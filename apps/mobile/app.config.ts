@@ -13,7 +13,7 @@ const config: ExpoConfig = {
   slug: 'zcs-connect',
   owner: EAS_OWNER,
   scheme: 'zcsconnect',
-  version: '1.0.0',
+  version: '1.1.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',

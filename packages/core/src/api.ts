@@ -33,11 +33,13 @@ export const api = {
 
   // feed & posts
   /** Newest first. To page, pass the last post's `sent_at` and `id` as `before` / `beforeId`. */
-  feed: (db: SupabaseClient, context: ContextKey, opts: { studentId?: string | null; query?: string | null; before?: string | null; beforeId?: string | null; limit?: number } = {}) =>
+  feed: (db: SupabaseClient, context: ContextKey, opts: { studentId?: string | null; query?: string | null; before?: string | null; beforeId?: string | null; limit?: number; saved?: boolean } = {}) =>
     rpc<FeedPost[]>(db, 'feed', {
       p_context: context, p_student: opts.studentId ?? null, p_query: opts.query || null,
       p_limit: opts.limit ?? 50, p_before: opts.before ?? null, p_before_id: opts.beforeId ?? null,
+      ...(opts.saved ? { p_saved: true } : {}),
     }),
+  setSaved: (db: SupabaseClient, postId: string, saved: boolean) => rpc<boolean>(db, 'set_post_saved', { p_post: postId, p_saved: saved }),
   markRead: (db: SupabaseClient, postId: string) => rpc<void>(db, 'mark_post_read', { p_post: postId }),
   acknowledge: (db: SupabaseClient, postId: string) => rpc<string>(db, 'acknowledge_post', { p_post: postId }),
   myAudiences: (db: SupabaseClient) => rpc<AudienceOption[]>(db, 'my_audiences'),
@@ -77,12 +79,21 @@ export const api = {
   // calendar
   calendar: async (db: SupabaseClient, from: string, to: string): Promise<CalendarEvent[]> => {
     const { data, error } = await db.from('calendar_events')
-      .select('id, title, starts_on, ends_on, start_time, end_time, location, no_school')
+      .select('id, title, starts_on, ends_on, start_time, end_time, location, no_school, audience_label, created_by, source')
       .lte('starts_on', to).or(`ends_on.gte.${from},and(ends_on.is.null,starts_on.gte.${from})`)
       .order('starts_on').order('start_time', { nullsFirst: true });
     if (error) throw new ApiError(friendly(error.message), error.code);
     return data as CalendarEvent[];
   },
+
+  /** Teachers add or edit an event that only their class's families and staff see. */
+  saveClassEvent: (db: SupabaseClient, e: { id?: string | null; classId: string; title: string; startsOn: string; endsOn?: string | null;
+    startTime?: string | null; endTime?: string | null; location?: string | null }) =>
+    rpc<string>(db, 'upsert_class_event', {
+      p_id: e.id ?? null, p_class: e.classId, p_title: e.title, p_starts_on: e.startsOn, p_ends_on: e.endsOn || null,
+      p_start_time: e.startTime || null, p_end_time: e.endTime || null, p_location: e.location || null,
+    }),
+  deleteClassEvent: (db: SupabaseClient, id: string) => rpc<void>(db, 'delete_class_event', { p_id: id }),
 
   // devices & preferences
   registerDevice: (db: SupabaseClient, token: string, platform: 'ios' | 'android' | 'web') =>

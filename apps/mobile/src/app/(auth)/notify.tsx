@@ -37,7 +37,7 @@ export default function Notify() {
   const parent = linked?.contexts.find(isParent);
   const who = parent ? `${childrenPossessive(parent)} teachers and the school office` : 'families and the school office';
 
-  const finish = () => { markOnboarded(); router.replace('/home'); };
+  const finish = () => { markOnboarded(); router.replace({ pathname: '/tour', params: { first: '1' } }); };
   const turnOn = async () => {
     setBusy(true);
     const ok = await enableNotifications().catch(() => false);

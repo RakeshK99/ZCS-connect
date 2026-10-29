@@ -46,4 +46,6 @@ jobs:
         with:
           deno-version: v2.x
       # --no-config: Edge Functions deploy standalone; don't pick up the pnpm workspace's package.json
-      - run: deno check --no-config supabase/functions/deliver/index.ts
+      - run: deno check --no-config supabase/functions/deliver/index.ts supabase/functions/calendar-sync/index.ts
+      - name: Calendar feed parser tests
+        run: deno test --no-config supabase/functions/calendar-sync/

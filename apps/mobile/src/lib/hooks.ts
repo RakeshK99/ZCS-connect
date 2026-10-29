@@ -3,7 +3,7 @@ import { api, isoDay, type ContextKey, type FeedPost, type Message, type Notific
 import { supabase } from './supabase';
 
 export const keys = {
-  feed: (ctx: ContextKey | null, student?: string | null, q?: string) => ['feed', ctx, student ?? 'all', q ?? ''] as const,
+  feed: (ctx: ContextKey | null, student?: string | null, q?: string, saved = false) => ['feed', ctx, student ?? 'all', q ?? '', saved ? 'saved' : 'all'] as const,
   threads: (ctx: ContextKey | null) => ['threads', ctx] as const,
   thread: (id: string) => ['thread', id] as const,
   calendar: (from: string, to: string) => ['calendar', from, to] as const,
@@ -14,10 +14,10 @@ export const keys = {
   contacts: (student: string, ctx: ContextKey) => ['contacts', student, ctx] as const,
 };
 
-export function useFeed(ctx: ContextKey | null, studentId?: string | null, query?: string) {
+export function useFeed(ctx: ContextKey | null, studentId?: string | null, query?: string, saved = false) {
   return useQuery({
-    queryKey: keys.feed(ctx, studentId, query),
-    queryFn: () => api.feed(supabase, ctx!, { studentId, query, limit: 60 }),
+    queryKey: keys.feed(ctx, studentId, query, saved),
+    queryFn: () => api.feed(supabase, ctx!, { studentId, query, limit: 60, saved }),
     enabled: !!ctx,
     refetchInterval: 60_000,
   });
@@ -115,5 +115,17 @@ export function useMarkRead() {
     onMutate: (postId) => {
       qc.setQueriesData<FeedPost[]>({ queryKey: ['feed'] }, (old) => old?.map((p) => (p.id === postId ? { ...p, read: true } : p)));
     },
+  });
+}
+
+/** Save a post to find it again later (a parent's own "important"). Updates every cached feed at once. */
+export function useSetSaved() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ postId, saved }: { postId: string; saved: boolean }) => api.setSaved(supabase, postId, saved),
+    onMutate: ({ postId, saved }) => {
+      qc.setQueriesData<FeedPost[]>({ queryKey: ['feed'] }, (old) => old?.map((p) => (p.id === postId ? { ...p, saved } : p)));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['feed'] }),
   });
 }
