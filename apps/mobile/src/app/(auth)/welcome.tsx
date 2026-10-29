@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { ZcsIcon } from '@/components/ZcsIcon';
@@ -23,7 +23,11 @@ export default function Welcome() {
       <View style={{ gap: 12 }}>
         <Button label="Get started" variant="maize" height={56} onPress={() => router.push('/sign-in')} />
         <Button label="I work at ZCS" variant="onNavy" height={56} loading={busy} onPress={() => staffSignIn(setBusy)} />
-        <Text style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>Preschool – 8th grade · Zeeland, Michigan</Text>
+        <Pressable accessibilityRole="link" accessibilityLabel="New to ZCS? Schedule a tour or ask a question" onPress={() => router.push('/explore')}
+          hitSlop={6} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+          <Text style={{ fontSize: 15, color: '#fff' }}>New to ZCS? <Text style={{ color: MAIZE, fontWeight: '700' }}>Schedule a tour</Text></Text>
+        </Pressable>
+        <Text style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>Preschool – 8th grade · Zeeland, Michigan</Text>
       </View>
     </View>
   );
