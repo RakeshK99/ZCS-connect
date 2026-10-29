@@ -1,7 +1,7 @@
 // Office/admin RPC wrappers used by the staff console.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ApiError } from './api';
-import type { Priority, ReachSummary, RoleKind, ScopeKind } from './types';
+import type { CalendarSourceStatus, Priority, ReachSummary, RoleKind, ScopeKind } from './types';
 
 async function rpc<T>(db: SupabaseClient, fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await db.rpc(fn, args);
@@ -82,6 +82,10 @@ export const admin = {
     rpc<string>(db, 'upsert_calendar_event', { p_id: e.id ?? null, p_title: e.title, p_starts_on: e.starts_on, p_ends_on: e.ends_on || null,
       p_start_time: e.start_time || null, p_end_time: e.end_time || null, p_location: e.location ?? null, p_no_school: e.no_school }),
   deleteEvent: (db: SupabaseClient, id: string) => rpc<void>(db, 'delete_calendar_event', { p_id: id }),
+  /** ZCS Google Calendar sync: the office pastes the calendar's secret iCal address (null disconnects). */
+  calendarSource: (db: SupabaseClient) => rpc<CalendarSourceStatus>(db, 'calendar_source_status'),
+  setCalendarSource: (db: SupabaseClient, url: string | null) => rpc<void>(db, 'set_calendar_source', { p_url: url }),
+  syncCalendarNow: (db: SupabaseClient) => rpc<void>(db, 'request_calendar_sync'),
 
   audit: (db: SupabaseClient, action?: string) => {
     let q = db.from('audit_log').select('id, action, target_type, target_id, detail, at, actor_id').order('at', { ascending: false }).limit(200);

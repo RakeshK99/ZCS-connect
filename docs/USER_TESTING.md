@@ -27,7 +27,15 @@ rate-limited, so testers need our own sender.
 Expo → Account settings → **Access tokens** → create a token with push security on. Save it as the
 `EXPO_ACCESS_TOKEN` Edge Function secret (or send it to Rakesh to set).
 
-### 3. TestFlight
+### 3. School calendar (Google Calendar)
+ZCS's Google Calendar is the source of truth for school events. Someone with access to it opens
+Google Calendar → the school calendar → **Settings and sharing** → **Secret address in iCal format**,
+copies it, and pastes it in the staff console under **School calendar → ZCS Google Calendar → Connect**.
+Events sync every 15 minutes (or **Sync now**). Change school events in Google Calendar; class events
+and events added by hand in the console are left alone. Before connecting, delete the demo events
+added by hand if they'd be confusing next to the real ones.
+
+### 4. TestFlight
 App Store Connect → TestFlight → **Public Beta** → Public Link → set the tester limit to **50**.
 
 ## Adding a tester
@@ -64,7 +72,5 @@ Running it again for the same email is safe. Testers then:
 
 - **Middle school rosters:** Mr. Jenkins is checking whether every teacher a student has should see
   that family, or only the homeroom teacher.
-- **Calendar sync** from the school-wide Google Sheet / Google Calendar: needs the source to be agreed.
-  Events are entered in the console for now.
 - Phone-number sign-in, translated posts, photo and voice privacy review, principal photo directory
   (deprioritized).

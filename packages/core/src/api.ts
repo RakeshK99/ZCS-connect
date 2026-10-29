@@ -79,7 +79,7 @@ export const api = {
   // calendar
   calendar: async (db: SupabaseClient, from: string, to: string): Promise<CalendarEvent[]> => {
     const { data, error } = await db.from('calendar_events')
-      .select('id, title, starts_on, ends_on, start_time, end_time, location, no_school, audience_label, created_by')
+      .select('id, title, starts_on, ends_on, start_time, end_time, location, no_school, audience_label, created_by, source')
       .lte('starts_on', to).or(`ends_on.gte.${from},and(ends_on.is.null,starts_on.gte.${from})`)
       .order('starts_on').order('start_time', { nullsFirst: true });
     if (error) throw new ApiError(friendly(error.message), error.code);
