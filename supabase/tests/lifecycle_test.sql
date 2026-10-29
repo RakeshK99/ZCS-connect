@@ -29,18 +29,27 @@ end $$;
 
 
 -- ---------------------------------------------------------------- account deletion (M5)
+-- Shared demo accounts can't be deleted from the app.
 select pg_temp.as_user('rakesh+sarah@syzygy.services');
+do $$ begin
+  perform public.delete_my_account();
+  perform pg_temp.check('a shared demo account cannot be deleted', false);
+exception when others then perform pg_temp.check('a shared demo account cannot be deleted', sqlerrm like '%shared by everyone testing%'); end $$;
+-- A real family's account can: give Sarah a non-demo address for this block.
+reset role;
+update public.people set email = 'sarah.family@zcs-test.org', user_id = null where email = 'rakesh+sarah@syzygy.services';
+select pg_temp.as_user('sarah.family@zcs-test.org');
 select public.mark_post_read((select id from public.posts where title like 'Snow day%'));
 insert into public.notification_prefs (person_id, context) values (private.me(), 'parent') on conflict do nothing;
 select public.delete_my_account();
 reset role;
 select pg_temp.check('deleting an account removes the sign-in and app data',
-  (select user_id is null and account_deleted_at is not null from public.people where email = 'rakesh+sarah@syzygy.services')
-  and not exists (select 1 from auth.users where email = 'rakesh+sarah@syzygy.services')
-  and not exists (select 1 from public.post_reads r join public.people p on p.id = r.person_id where p.email = 'rakesh+sarah@syzygy.services')
-  and not exists (select 1 from public.notification_prefs n join public.people p on p.id = n.person_id where p.email = 'rakesh+sarah@syzygy.services'));
+  (select user_id is null and account_deleted_at is not null from public.people where email = 'sarah.family@zcs-test.org')
+  and not exists (select 1 from auth.users where email = 'sarah.family@zcs-test.org')
+  and not exists (select 1 from public.post_reads r join public.people p on p.id = r.person_id where p.email = 'sarah.family@zcs-test.org')
+  and not exists (select 1 from public.notification_prefs n join public.people p on p.id = n.person_id where p.email = 'sarah.family@zcs-test.org'));
 select pg_temp.check('account deletion is audited', exists (select 1 from public.audit_log where action = 'account.delete'));
-select pg_temp.as_user('rakesh+sarah@syzygy.services');
+select pg_temp.as_user('sarah.family@zcs-test.org');
 select pg_temp.check('signing in again creates a new linked account', (public.session_info()->>'linked')::boolean);
 reset role;
 select pg_temp.check('the re-link is recorded', exists (select 1 from public.audit_log where action = 'account.relink_after_delete'));
