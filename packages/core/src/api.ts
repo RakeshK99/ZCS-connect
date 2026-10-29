@@ -79,12 +79,21 @@ export const api = {
   // calendar
   calendar: async (db: SupabaseClient, from: string, to: string): Promise<CalendarEvent[]> => {
     const { data, error } = await db.from('calendar_events')
-      .select('id, title, starts_on, ends_on, start_time, end_time, location, no_school')
+      .select('id, title, starts_on, ends_on, start_time, end_time, location, no_school, audience_label, created_by')
       .lte('starts_on', to).or(`ends_on.gte.${from},and(ends_on.is.null,starts_on.gte.${from})`)
       .order('starts_on').order('start_time', { nullsFirst: true });
     if (error) throw new ApiError(friendly(error.message), error.code);
     return data as CalendarEvent[];
   },
+
+  /** Teachers add or edit an event that only their class's families and staff see. */
+  saveClassEvent: (db: SupabaseClient, e: { id?: string | null; classId: string; title: string; startsOn: string; endsOn?: string | null;
+    startTime?: string | null; endTime?: string | null; location?: string | null }) =>
+    rpc<string>(db, 'upsert_class_event', {
+      p_id: e.id ?? null, p_class: e.classId, p_title: e.title, p_starts_on: e.startsOn, p_ends_on: e.endsOn || null,
+      p_start_time: e.startTime || null, p_end_time: e.endTime || null, p_location: e.location || null,
+    }),
+  deleteClassEvent: (db: SupabaseClient, id: string) => rpc<void>(db, 'delete_class_event', { p_id: id }),
 
   // devices & preferences
   registerDevice: (db: SupabaseClient, token: string, platform: 'ios' | 'android' | 'web') =>

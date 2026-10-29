@@ -64,6 +64,7 @@ export default function CalendarAdmin() {
                 <div className="flex-1"><div className="font-semibold">{e.title.replace(/^No school · /, '')}</div>
                   <div className="text-sm text-tx2">{e.ends_on ? `Through ${e.ends_on} · ` : ''}{e.start_time ? `${timeOfDay(e.start_time)}${e.end_time ? ` – ${timeOfDay(e.end_time)}` : ''}` : 'All day'}{e.location ? ` · ${e.location}` : ''}</div></div>
                 {e.no_school ? <Badge>No school</Badge> : null}
+                {e.audience_label ? <Badge tone="navy">Class · {e.audience_label}</Badge> : null}
                 <Button variant="ghost" icon={Pencil} onClick={() => edit(e)} aria-label={`Edit ${e.title}`} />
                 <Button variant="ghost" icon={Trash2} onClick={() => { if (confirm(`Delete "${e.title}"?`)) del.mutate(e.id); }} aria-label={`Delete ${e.title}`} />
               </div>
