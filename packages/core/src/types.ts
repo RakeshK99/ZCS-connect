@@ -197,6 +197,16 @@ export interface CalendarEvent {
   /** Set for class events ("3S · Mrs. Smith's 3rd Grade"); null for school-wide ones. */
   audience_label?: string | null;
   created_by?: string | null;
+  /** 'ics' = synced from the ZCS Google Calendar (change it there); 'manual' = entered in ZCS Connect. */
+  source?: 'manual' | 'ics';
+}
+
+export interface CalendarSourceStatus {
+  connected: boolean;
+  last_synced_at?: string | null;
+  last_count?: number | null;
+  last_error?: string | null;
+  synced_events?: number;
 }
 
 export interface NotificationPrefs {
