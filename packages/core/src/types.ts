@@ -194,6 +194,9 @@ export interface CalendarEvent {
   end_time: string | null;
   location: string | null;
   no_school: boolean;
+  /** Set for class events ("3S · Mrs. Smith's 3rd Grade"); null for school-wide ones. */
+  audience_label?: string | null;
+  created_by?: string | null;
 }
 
 export interface NotificationPrefs {
