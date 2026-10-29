@@ -1,12 +1,13 @@
 import { clockTime, initials, relativeTime } from '@zcs/core';
 import { router, useLocalSearchParams } from 'expo-router';
-import { BarChart3, Check, CircleCheck, Pin, Share2, Siren, Users } from 'lucide-react-native';
+import { BarChart3, Bookmark, Check, CircleCheck, Pin, Share2, Siren, Users } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { ScrollView, Share, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, BackButton, Button, EmptyState, IconButton, NavBar, Pill } from '@/components/ui';
 import { AttachmentStrip } from '@/features/feed/Attachments';
-import { useAcknowledge, useCachedPost, useMarkRead } from '@/lib/hooks';
+import { useAcknowledge, useCachedPost, useMarkRead, useSetSaved } from '@/lib/hooks';
+import { LinkedText } from '@/components/LinkedText';
 import { useLinked } from '@/lib/session';
 import { useTheme } from '@/theme/ThemeProvider';
 import { font, MAIZE, NAVY, RED } from '@/theme/tokens';
@@ -19,6 +20,7 @@ export default function PostDetail() {
   const { post, loading } = useCachedPost(id, contextKey);
   const markRead = useMarkRead();
   const ack = useAcknowledge();
+  const save = useSetSaved();
 
   useEffect(() => { if (post && !post.read && !post.mine) markRead.mutate(post.id); }, [post?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -40,7 +42,13 @@ export default function PostDetail() {
     <View style={{ flex: 1, backgroundColor: c.sf }}>
       <View style={{ backgroundColor: emergency ? RED : c.sf }}>
         <NavBar left={<BackButton label="Home" color={fg} onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} />}
-          right={<IconButton icon={Share2} label="Share" color={fg} size={20} onPress={() => Share.share({ message: `${post.title}\n\n${post.body}` })} />} />
+          right={
+            <View style={{ flexDirection: 'row' }}>
+              <IconButton icon={Bookmark} label={post.saved ? 'Saved. Tap to remove from Saved' : 'Save this post'} color={fg} size={20}
+                fill={post.saved ? fg : undefined} onPress={() => save.mutate({ postId: post.id, saved: !post.saved })} />
+              <IconButton icon={Share2} label="Share" color={fg} size={20} onPress={() => Share.share({ message: `${post.title}\n\n${post.body}` })} />
+            </View>
+          } />
         {emergency ? (
           <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 20, gap: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -72,7 +80,7 @@ export default function PostDetail() {
             </View>
           ) : null}
         </View>
-        <Text selectable style={{ fontSize: 17, lineHeight: 26, color: c.tx }}>{post.body}</Text>
+        <LinkedText selectable style={{ fontSize: 17, lineHeight: 26, color: c.tx }} linkColor={c.link}>{post.body}</LinkedText>
         <AttachmentStrip attachments={post.attachments} />
         {post.mine ? <Button label="See who's been reached" icon={BarChart3} variant="secondary" onPress={() => router.push(`/reach/${post.id}`)} /> : null}
       </ScrollView>

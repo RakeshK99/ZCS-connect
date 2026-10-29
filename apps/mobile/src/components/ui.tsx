@@ -74,15 +74,15 @@ export function Button({ label, onPress, variant = 'primary', icon: Icon, leadin
   );
 }
 
-export function IconButton({ icon: Icon, onPress, label, color, bg, size = 22, style }: {
-  icon: LucideIcon; onPress?: () => void; label: string; color?: string; bg?: string; size?: number; style?: StyleProp<ViewStyle>;
+export function IconButton({ icon: Icon, onPress, label, color, bg, size = 22, style, fill }: {
+  icon: LucideIcon; onPress?: () => void; label: string; color?: string; bg?: string; size?: number; style?: StyleProp<ViewStyle>; fill?: string;
 }) {
   const { c } = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={4}
       style={({ pressed }) => [{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
         backgroundColor: bg ?? 'transparent', opacity: pressed ? 0.6 : 1 }, style]}>
-      <Icon size={size} color={color ?? c.link} />
+      <Icon size={size} color={color ?? c.link} fill={fill ?? 'none'} />
     </Pressable>
   );
 }

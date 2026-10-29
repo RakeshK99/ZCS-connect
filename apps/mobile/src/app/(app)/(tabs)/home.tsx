@@ -1,6 +1,6 @@
 import { canCompose, childrenPossessive, isParent, isStaff, type FeedPost } from '@zcs/core';
 import { router } from 'expo-router';
-import { ChevronDown, Newspaper, Pin, Search, SquarePen, WifiOff } from 'lucide-react-native';
+import { Bookmark, ChevronDown, Newspaper, Pin, Search, SquarePen, WifiOff } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,22 +22,25 @@ export default function Home() {
   const switcher = useRoleSwitcher();
   const [filter, setFilter] = useState<string>('all');
   const [query, setQuery] = useState('');
-  const feed = useFeed(context.key, filter === 'all' ? null : filter, query.trim() || undefined);
+  const saved = filter === 'saved';
+  const feed = useFeed(context.key, filter === 'all' || saved ? null : filter, query.trim() || undefined, saved);
   const multi = linked.contexts.length > 1;
 
   const chips = isParent(context)
     ? [{ id: 'all', label: 'All' }, ...context.children.map((k) => ({ id: k.id, label: `${k.name} · ${k.grade ?? ''}` }))]
     : [{ id: 'all', label: 'All' }, ...(isStaff(context) ? context.classes.filter((k) => k.kind === 'class').map((k) => ({ id: k.id, label: `${k.code} · My class` })) : [])];
+  chips.splice(1, 0, { id: 'saved', label: 'Saved' });
 
   const { emergency, pinned, latest } = useMemo(() => {
     const posts = feed.data ?? [];
+    if (saved) return { emergency: undefined, pinned: [], latest: posts };
     const emergency = posts.find((p) => p.priority === 'emergency' && p.pinned);
     return {
       emergency,
       pinned: posts.filter((p) => p.priority === 'important' && p.pinned),
       latest: posts.filter((p) => p.id !== emergency?.id && !(p.priority === 'important' && p.pinned)),
     };
-  }, [feed.data]);
+  }, [feed.data, saved]);
 
   const initialsText = linked.person.full_name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   const empty = !feed.isLoading && (feed.data?.length ?? 0) === 0;
@@ -85,8 +88,8 @@ export default function Home() {
         {feed.isLoading && !feed.data ? <FeedSkeleton /> : null}
         {feed.isError && !feed.data ? <Notice icon={WifiOff} style={{ margin: 16 }}>We couldn't load posts. Pull down to try again.</Notice> : null}
         {empty ? (
-          <EmptyState icon={Newspaper} title={query ? 'No matching posts' : 'No posts yet'}
-            body={query ? 'Try a different word.' : isParent(context)
+          <EmptyState icon={saved ? Bookmark : Newspaper} title={query ? 'No matching posts' : saved ? 'Nothing saved yet' : 'No posts yet'}
+            body={query ? 'Try a different word.' : saved ? 'Tap Save on any post to keep it here, like a permission slip or a supply list.' : isParent(context)
               ? `When ${childrenPossessive(context)} teachers or the school office post, you'll see it here.`
               : 'Posts to your classes and the school will show up here.'} />
         ) : null}
@@ -94,7 +97,7 @@ export default function Home() {
         <View style={{ paddingHorizontal: 16, paddingTop: 8, gap: 12 }}>
           {pinned.length ? <SectionLabel icon={Pin} style={{ paddingTop: 8, paddingBottom: 0, paddingHorizontal: 2 }}>Pinned</SectionLabel> : null}
           {pinned.map((p: FeedPost) => <PostCard key={p.id} post={p} />)}
-          {latest.length ? <SectionLabel icon={Newspaper} style={{ paddingTop: 8, paddingBottom: 0, paddingHorizontal: 2 }}>Latest</SectionLabel> : null}
+          {latest.length ? <SectionLabel icon={saved ? Bookmark : Newspaper} style={{ paddingTop: 8, paddingBottom: 0, paddingHorizontal: 2 }}>{saved ? 'Saved' : 'Latest'}</SectionLabel> : null}
           {latest.map((p: FeedPost) => <PostCard key={p.id} post={p} />)}
         </View>
       </ScrollView>

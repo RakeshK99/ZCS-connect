@@ -33,11 +33,13 @@ export const api = {
 
   // feed & posts
   /** Newest first. To page, pass the last post's `sent_at` and `id` as `before` / `beforeId`. */
-  feed: (db: SupabaseClient, context: ContextKey, opts: { studentId?: string | null; query?: string | null; before?: string | null; beforeId?: string | null; limit?: number } = {}) =>
+  feed: (db: SupabaseClient, context: ContextKey, opts: { studentId?: string | null; query?: string | null; before?: string | null; beforeId?: string | null; limit?: number; saved?: boolean } = {}) =>
     rpc<FeedPost[]>(db, 'feed', {
       p_context: context, p_student: opts.studentId ?? null, p_query: opts.query || null,
       p_limit: opts.limit ?? 50, p_before: opts.before ?? null, p_before_id: opts.beforeId ?? null,
+      ...(opts.saved ? { p_saved: true } : {}),
     }),
+  setSaved: (db: SupabaseClient, postId: string, saved: boolean) => rpc<boolean>(db, 'set_post_saved', { p_post: postId, p_saved: saved }),
   markRead: (db: SupabaseClient, postId: string) => rpc<void>(db, 'mark_post_read', { p_post: postId }),
   acknowledge: (db: SupabaseClient, postId: string) => rpc<string>(db, 'acknowledge_post', { p_post: postId }),
   myAudiences: (db: SupabaseClient) => rpc<AudienceOption[]>(db, 'my_audiences'),
