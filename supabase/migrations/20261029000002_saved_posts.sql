@@ -84,3 +84,25 @@ begin
 end $$;
 revoke execute on function public.feed(public.app_context, uuid, text, int, timestamptz, uuid, boolean) from public, anon;
 grant execute on function public.feed(public.app_context, uuid, text, int, timestamptz, uuid, boolean) to authenticated;
+
+-- Deleting an account also removes its saved posts.
+create or replace function public.delete_my_account() returns void
+language plpgsql security definer set search_path = '' as $$
+declare v_me uuid := private.me();
+begin
+  if auth.uid() is null then raise exception 'not signed in' using errcode = '28000'; end if;
+  if private.is_demo_email((select u.email from auth.users u where u.id = auth.uid())) then
+    raise exception 'Demo accounts are shared by everyone testing, so they can''t be deleted.' using errcode = '42501';
+  end if;
+  if v_me is not null then
+    perform private.audit('account.delete', 'person', v_me::text);
+    delete from public.devices where person_id = v_me;
+    delete from public.notification_prefs where person_id = v_me;
+    delete from public.post_reads where person_id = v_me;
+    delete from public.post_saves where person_id = v_me;
+    update public.thread_participants set last_read_at = null where person_id = v_me;
+    update public.people set user_id = null, account_deleted_at = now() where id = v_me;
+  end if;
+  delete from public.family_requests where user_id = auth.uid();
+  delete from auth.users where id = auth.uid();
+end $$;
