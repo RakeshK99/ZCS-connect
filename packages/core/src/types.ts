@@ -104,6 +104,8 @@ export interface FeedPost {
   require_ack: boolean;
   read: boolean;
   acked: boolean;
+  /** The viewer saved this post to find it again (older servers omit it). */
+  saved?: boolean;
   student_ids: string[] | null;
   attachments: Attachment[];
   reach: ReachSummary | null;

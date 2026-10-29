@@ -10,6 +10,7 @@ import { useSendMessage, useThreadMessages, useThreads } from '@/lib/hooks';
 import { useOnline } from '@/lib/query';
 import { useLinked } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
+import { LinkedText } from '@/components/LinkedText';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Thread() {
@@ -75,7 +76,7 @@ export default function Thread() {
               {showDay ? <Text style={{ alignSelf: 'center', fontSize: 12, fontWeight: '600', color: c.tx3, marginTop: 8, marginBottom: 2 }}>{dayLabel(m.created_at)}</Text> : null}
               <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '78%', backgroundColor: mine ? strong : c.sf, paddingVertical: 10, paddingHorizontal: 14,
                 borderRadius: 18, borderBottomRightRadius: mine ? 6 : 18, borderBottomLeftRadius: mine ? 18 : 6 }}>
-                <Text selectable style={{ fontSize: 16, lineHeight: 22, color: mine ? strongTx : c.tx }}>{m.body}</Text>
+                <LinkedText selectable style={{ fontSize: 16, lineHeight: 22, color: mine ? strongTx : c.tx }} linkColor={mine ? strongTx : c.link}>{m.body}</LinkedText>
               </View>
               {isLast || queued ? (
                 <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', flexDirection: 'row', gap: 4, alignItems: 'center', paddingHorizontal: 4, marginTop: 2 }}>
