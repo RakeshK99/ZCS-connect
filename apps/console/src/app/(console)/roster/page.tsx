@@ -7,26 +7,12 @@ import {
   type RosterField, type RosterPreview, type RosterRow,
 } from '@zcs/core';
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, RotateCcw, Upload } from 'lucide-react';
-import Papa from 'papaparse';
 import { useState } from 'react';
-import readXlsxFile, { readSheetNames } from 'read-excel-file';
 import { Badge, Button, Card, ErrorNote, PageHeader, SectionTitle, Select, cx } from '@/components/ui';
+import { readSpreadsheet as readFile, type Sheet } from '@/lib/sheets';
 import { supabase } from '@/lib/supabase';
 
-type Sheet = { name: string; rows: string[][] };
 const STEPS = ['Upload', 'Check columns', 'Preview changes', 'Done'];
-
-async function readFile(file: File): Promise<Sheet[]> {
-  if (/\.(xlsx|xlsm)$/i.test(file.name)) {
-    const names = await readSheetNames(file);
-    return Promise.all(names.map(async (name) => ({ name, rows: (await readXlsxFile(file, { sheet: name })).map((r) => r.map((c) => (c == null ? '' : String(c)))) })));
-  }
-  const text = await file.text();
-  // Google Sheets "Download as CSV" and the ZCS export sometimes arrive as one column wrapped in ``` fences.
-  const cleaned = text.replace(/^```.*$/gm, '').trim();
-  const parsed = Papa.parse<string[]>(cleaned, { skipEmptyLines: true });
-  return [{ name: file.name.replace(/\.\w+$/, ''), rows: parsed.data }];
-}
 
 export default function RosterImport() {
   const qc = useQueryClient();

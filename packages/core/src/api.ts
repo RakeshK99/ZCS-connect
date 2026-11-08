@@ -59,6 +59,11 @@ export const api = {
 
   // classes
   classRoster: (db: SupabaseClient, classId: string) => rpc<RosterStudent[]>(db, 'class_roster', { p_class: classId }),
+  /** Students on the school's list who aren't in this class (names and grades only). */
+  classStudentCandidates: (db: SupabaseClient, classId: string, query: string) =>
+    rpc<{ student_id: string; name: string; grade: string | null }[]>(db, 'class_student_candidates', { p_class: classId, p_query: query }),
+  classAddStudent: (db: SupabaseClient, classId: string, studentId: string) => rpc<void>(db, 'class_add_student', { p_class: classId, p_student: studentId }),
+  classRemoveStudent: (db: SupabaseClient, classId: string, studentId: string) => rpc<void>(db, 'class_remove_student', { p_class: classId, p_student: studentId }),
 
   // messaging
   myThreads: (db: SupabaseClient, context: ContextKey) => rpc<ThreadSummary[]>(db, 'my_threads', { p_context: context }),

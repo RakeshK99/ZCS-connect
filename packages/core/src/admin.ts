@@ -1,6 +1,7 @@
 // Office/admin RPC wrappers used by the staff console.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ApiError } from './api';
+import type { ClassListRow } from './classlists';
 import type { CalendarSourceStatus, Priority, ReachSummary, RoleKind, ScopeKind } from './types';
 
 async function rpc<T>(db: SupabaseClient, fn: string, args?: Record<string, unknown>): Promise<T> {
@@ -72,6 +73,9 @@ export const admin = {
   applyRoster: (db: SupabaseClient, id: string, deactivateMissing: boolean) =>
     rpc<Record<string, number>>(db, 'apply_roster_import', { p_import: id, p_deactivate_missing: deactivateMissing }),
   revertRoster: (db: SupabaseClient, id: string) => rpc<void>(db, 'revert_roster_import', { p_import: id }),
+  /** Semester class lists: preview (apply = false) or apply. Classes in the file are made to match it exactly. */
+  importClassLists: (db: SupabaseClient, rows: ClassListRow[], apply: boolean) =>
+    rpc<ClassListResult>(db, 'import_class_lists', { p_rows: rows, p_apply: apply, p_replace: true }),
   rosterImports: (db: SupabaseClient) =>
     select<RosterImport[]>(db.from('roster_imports').select('id, file_name, status, summary, created_at, applied_at, reverted_at').order('created_at', { ascending: false }).limit(20)),
 
@@ -119,3 +123,17 @@ export const ROLE_LABELS: Record<RoleKind, string> = {
 export const ROLE_SCOPE: Record<RoleKind, ScopeKind> = {
   teacher: 'class', aide: 'class', group_leader: 'class', principal: 'division', office: 'school', emergency_sender: 'school', admin: 'school',
 };
+
+export interface ClassListResult {
+  applied: boolean;
+  rows: number;
+  classes_new: number;
+  classes_updated: number;
+  staff_new: number;
+  teacher_links_added: number;
+  teacher_links_ended: number;
+  students_added: number;
+  students_removed: number;
+  unmatched: { row: number; name: string; class?: string; reason: string }[];
+  not_school_emails: string[];
+}
