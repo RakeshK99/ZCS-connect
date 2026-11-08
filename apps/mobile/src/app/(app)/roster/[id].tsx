@@ -1,12 +1,13 @@
 import { api, initials, isStaff } from '@zcs/core';
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
-import { EyeOff, MessageCircle, Phone, SquarePen } from 'lucide-react-native';
+import { EyeOff, MessageCircle, Phone, SquarePen, UserMinus, UserPlus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, BackButton, Button, Group, H, NavBar, Skeleton } from '@/components/ui';
-import { useRoster } from '@/lib/hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import { keys, useRoster } from '@/lib/hooks';
 import { useLinked } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -21,6 +22,16 @@ export default function Roster() {
   const [open, setOpen] = useState<string | null>(null);
   const students = roster.data ?? [];
   const families = new Set(students.flatMap((s) => s.guardians.map((g) => g.person_id))).size;
+
+  const qc = useQueryClient();
+  const remove = (studentId: string, name: string) => Alert.alert(`Remove ${name} from ${cls?.code ?? 'this class'}?`,
+    'Their family stops getting this class\'s posts. They stay on the school\'s list, and you can add them back any time.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => {
+        try { await api.classRemoveStudent(supabase, id, studentId); setOpen(null); qc.invalidateQueries({ queryKey: keys.roster(id) }); }
+        catch (e) { Alert.alert('Class list', (e as Error).message); }
+      } },
+    ]);
 
   const message = async (studentId: string, personId: string) => {
     try {
@@ -41,6 +52,10 @@ export default function Roster() {
           <Button label="Post to class" icon={SquarePen} height={44} style={{ flex: 1 }} onPress={() => router.push({ pathname: '/compose', params: { classId: id } })} />
           <Button label="Messages" icon={MessageCircle} variant="secondary" height={44} style={{ flex: 1 }} onPress={() => router.push('/messages')} />
         </View>
+        {cls ? (
+          <Button label="Add a student" icon={UserPlus} variant="ghost" height={44} style={{ marginTop: 4, alignSelf: 'flex-start' }}
+            onPress={() => router.push({ pathname: '/roster-add', params: { classId: id } })} />
+        ) : null}
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40 }}>
         <Text style={{ fontSize: 13, color: c.tx2, paddingHorizontal: 4, paddingBottom: 8 }}>Tap a student to see family contacts</Text>
@@ -90,6 +105,12 @@ export default function Roster() {
                         ) : null}
                       </View>
                     ))}
+                    {cls ? (
+                      <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${s.name} from this class`} onPress={() => remove(s.student_id, s.name)}
+                        style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 4 }}>
+                        <UserMinus size={16} color={c.tx2} /><Text style={{ fontSize: 14, color: c.tx2 }}>Remove from {cls.code}</Text>
+                      </Pressable>
+                    ) : null}
                   </View>
                 ) : null}
               </View>

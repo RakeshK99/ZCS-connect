@@ -4,3 +4,4 @@ export * from './format';
 export * from './contexts';
 export * from './admin';
 export * from './roster';
+export * from './classlists';
