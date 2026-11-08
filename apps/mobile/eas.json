@@ -1,22 +1,58 @@
 {
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
-    "base": { "node": "22.12.0", "pnpm": "10.28.0" },
-    "development": { "extends": "base", "developmentClient": true, "distribution": "internal" },
-    "preview": { "extends": "base", "distribution": "internal" },
+    "base": {
+      "node": "22.12.0",
+      "pnpm": "10.28.0"
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal"
+    },
     "demo": {
       "extends": "base",
       "distribution": "store",
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_DEMO_LOGIN": "1" }
+      "env": {
+        "EXPO_PUBLIC_DEMO_LOGIN": "1",
+        "EXPO_PUBLIC_GOOGLE_SIGN_IN": "1",
+        "EXPO_PUBLIC_APPLE_SIGN_IN": "1"
+      }
     },
-    "production": { "extends": "base", "distribution": "store", "autoIncrement": true }
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_SIGN_IN": "1",
+        "EXPO_PUBLIC_APPLE_SIGN_IN": "1"
+      }
+    }
   },
   "submit": {
-    "demo": { "ios": { "appleTeamId": "B8DZJ77GAH", "ascAppId": "6825599860" } },
+    "demo": {
+      "ios": {
+        "appleTeamId": "B8DZJ77GAH",
+        "ascAppId": "6825599860"
+      }
+    },
     "production": {
-      "ios": { "appleTeamId": "B8DZJ77GAH", "ascAppId": "6825599860" },
-      "android": { "track": "internal", "releaseStatus": "draft" }
+      "ios": {
+        "appleTeamId": "B8DZJ77GAH",
+        "ascAppId": "6825599860"
+      },
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
     }
   }
 }

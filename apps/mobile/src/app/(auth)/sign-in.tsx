@@ -9,7 +9,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { font } from '@/theme/tokens';
 import { STAFF_DOMAIN, staffSignIn } from '@/lib/staff';
 import { APPLE_SIGN_IN, GOOGLE_SIGN_IN } from '@/lib/flags';
-import { DemoSignIn } from '@/features/demo/DemoSignIn';
+import { DEMO_ENABLED, DemoSignIn } from '@/features/demo/DemoSignIn';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -17,9 +17,10 @@ export default function SignIn() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState<null | 'apple' | 'google' | 'code' | 'staff'>(null);
+  const [busy, setBusy] = useState<null | 'apple' | 'google' | 'code'>(null);
   const staff = useLocalSearchParams<{ staff?: string }>().staff === '1';
   const [apple, setApple] = useState(false);
+  const [demo, setDemo] = useState(false);
   useEffect(() => { if (APPLE_SIGN_IN) appleAvailable().then(setApple); }, []);
 
   const run = async (kind: 'apple' | 'google', fn: () => Promise<unknown>) => {
@@ -57,22 +58,6 @@ export default function SignIn() {
           {staff ? `Enter your @${STAFF_DOMAIN} email and we'll send you a 6-digit code. No password needed.`
             : 'Use the email the school office has on file for your family. No password needed.'}
         </T>
-        {staff ? null : <DemoSignIn />}
-        {apple && !staff ? (
-          <Button label="Sign in with Apple" variant="apple" loading={busy === 'apple'} onPress={() => run('apple', signInWithApple)}
-            leading={<Text style={{ fontSize: 19, color: c.appleTx }}></Text>} />
-        ) : null}
-        {GOOGLE_SIGN_IN && !staff ? (
-          <Button label="Sign in with Google" variant="secondary" loading={busy === 'google'} onPress={() => run('google', () => signInWithGoogle())}
-            leading={<Text style={{ fontFamily: font.heading, fontSize: 18, color: c.tx }}>G</Text>} />
-        ) : null}
-        {(GOOGLE_SIGN_IN || apple) && !staff ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 8 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: c.bd }} />
-            <Text style={{ color: c.tx3, fontSize: 13 }}>or use a code</Text>
-            <View style={{ flex: 1, height: 1, backgroundColor: c.bd }} />
-          </View>
-        ) : null}
         <Text nativeID="emailLabel" style={{ fontSize: 13, fontWeight: '600', color: c.tx2 }}>Email</Text>
         <TextInput
           accessibilityLabelledBy="emailLabel" value={email} onChangeText={setEmail} onSubmitEditing={sendCode}
@@ -80,10 +65,31 @@ export default function SignIn() {
           placeholder={staff ? `name@${STAFF_DOMAIN}` : 'name@example.com'} placeholderTextColor={c.tx3}
           style={{ height: 52, borderRadius: 12, borderWidth: 1, borderColor: c.bdS, backgroundColor: c.sf, color: c.tx, paddingHorizontal: 16, fontSize: 17 }} />
         <Button label="Email me a 6-digit code" icon={Mail} loading={busy === 'code'} onPress={sendCode} />
+        <T tone="tx3" size={13}>We&apos;ll email you a code to type in. There&apos;s no password to create or remember.</T>
+
+        {(apple && !staff) || GOOGLE_SIGN_IN ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 8 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: c.bd }} />
+            <Text style={{ color: c.tx3, fontSize: 13 }}>or</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: c.bd }} />
+          </View>
+        ) : null}
+        {apple && !staff ? (
+          <Button label="Continue with Apple" variant="apple" loading={busy === 'apple'} onPress={() => run('apple', signInWithApple)}
+            leading={<Text style={{ fontSize: 19, color: c.appleTx }}></Text>} />
+        ) : null}
+        {GOOGLE_SIGN_IN ? (
+          <Button label={staff ? `Continue with Google (@${STAFF_DOMAIN})` : 'Continue with Google'} variant="secondary" loading={busy === 'google'}
+            onPress={() => run('google', () => signInWithGoogle(staff ? STAFF_DOMAIN : undefined))}
+            leading={<Text style={{ fontFamily: font.heading, fontSize: 18, color: c.tx }}>G</Text>} />
+        ) : null}
+
         <View style={{ flex: 1, minHeight: 24 }} />
         {staff ? null : (
-          <Button label={GOOGLE_SIGN_IN ? `ZCS staff: sign in with Google (@${STAFF_DOMAIN})` : 'I work at ZCS'} variant="ghost" loading={busy === 'staff'}
-            onPress={() => staffSignIn((b) => setBusy(b ? 'staff' : null))} />
+          <Button label="I work at ZCS" variant="ghost" onPress={() => staffSignIn()} />
+        )}
+        {staff || !DEMO_ENABLED ? null : demo ? <DemoSignIn /> : (
+          <Button label="Try the demo school" variant="ghost" onPress={() => setDemo(true)} />
         )}
       </ScrollView>
     </KeyboardAvoidingView>
