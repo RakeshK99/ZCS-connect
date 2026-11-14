@@ -45,6 +45,10 @@ steps 1–3 before installing it.
 
 When ZCS is ready to own this, make the same client in their Google Cloud and swap the two values.
 
+Google is optional. Email codes work for everyone, staff included. The staff website only shows
+**Continue with Google** when it is built with `NEXT_PUBLIC_GOOGLE_SIGN_IN=1`, so turn that on
+only after this step works.
+
 ## 3. Apple, about 2 minutes
 
 1. Supabase → **Authentication → Sign In / Providers → Apple:** turn it on. Under **Client IDs**,
