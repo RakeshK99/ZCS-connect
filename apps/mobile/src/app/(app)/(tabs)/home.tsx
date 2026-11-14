@@ -1,6 +1,6 @@
 import { canCompose, childrenPossessive, isParent, isStaff, type FeedPost } from '@zcs/core';
 import { router } from 'expo-router';
-import { Bookmark, ChevronDown, Newspaper, Pin, Search, SquarePen, WifiOff } from 'lucide-react-native';
+import { Bookmark, CheckCheck, ChevronDown, Eye, EyeOff, Newspaper, Pin, Search, SquarePen, Undo2, WifiOff } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import { Chip, EmptyState, Notice, SectionLabel } from '@/components/ui';
 import { ZcsIcon } from '@/components/ZcsIcon';
 import { EmergencyBanner, FeedSkeleton, PostCard } from '@/features/feed/PostCard';
 import { useRoleSwitcher } from '@/features/roles/RoleSwitcher';
-import { useFeed } from '@/lib/hooks';
+import { useClearRead, useFeed, useRestoreCleared } from '@/lib/hooks';
 import { useOnline } from '@/lib/query';
 import { useLinked } from '@/lib/session';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -23,7 +23,12 @@ export default function Home() {
   const [filter, setFilter] = useState<string>('all');
   const [query, setQuery] = useState('');
   const saved = filter === 'saved';
-  const feed = useFeed(context.key, filter === 'all' || saved ? null : filter, query.trim() || undefined, saved);
+  const [showCleared, setShowCleared] = useState(false);
+  const searching = query.trim().length > 0;
+  const feed = useFeed(context.key, filter === 'all' || saved ? null : filter, query.trim() || undefined, saved ? 'saved' : showCleared ? 'cleared' : 'all');
+  const clearRead = useClearRead();
+  const restore = useRestoreCleared();
+  const [undo, setUndo] = useState<string[] | null>(null);
   const multi = linked.contexts.length > 1;
 
   const chips = isParent(context)
@@ -32,18 +37,28 @@ export default function Home() {
   chips.splice(1, 0, { id: 'saved', label: 'Saved' });
 
   const { emergency, pinned, latest } = useMemo(() => {
-    const posts = feed.data ?? [];
-    if (saved) return { emergency: undefined, pinned: [], latest: posts };
+    const all = feed.data ?? [];
+    if (saved) return { emergency: undefined, pinned: [], latest: all };
+    // Cleared posts stay hidden on Home (the server already leaves them out; this
+    // also hides them instantly after "Clear read", before the refetch lands).
+    const posts = searching || showCleared ? all : all.filter((p) => !p.cleared || p.pinned);
     const emergency = posts.find((p) => p.priority === 'emergency' && p.pinned);
     return {
       emergency,
       pinned: posts.filter((p) => p.priority === 'important' && p.pinned),
       latest: posts.filter((p) => p.id !== emergency?.id && !(p.priority === 'important' && p.pinned)),
     };
-  }, [feed.data, saved]);
+  }, [feed.data, saved, searching, showCleared]);
+
+  // What "Clear read" would hide: read, not pinned, nothing left to confirm.
+  const clearable = latest.filter((p) => p.read && !p.cleared && !p.pinned && !(p.require_ack && !p.acked)).length;
+  const canClear = !saved && !searching && !showCleared && clearable > 0;
+  const onClear = () => clearRead.mutate(undefined, { onSuccess: (ids) => setUndo(ids.length ? ids : null) });
+  const onUndo = () => { if (undo) restore.mutate(undo); setUndo(null); };
 
   const initialsText = linked.person.full_name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const empty = !feed.isLoading && (feed.data?.length ?? 0) === 0;
+  const empty = !feed.isLoading && !emergency && pinned.length === 0 && latest.length === 0;
+  const caughtUp = empty && !saved && !searching && !showCleared && (feed.data?.length ?? 0) > 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -87,7 +102,19 @@ export default function Home() {
 
         {feed.isLoading && !feed.data ? <FeedSkeleton /> : null}
         {feed.isError && !feed.data ? <Notice icon={WifiOff} style={{ margin: 16 }}>We couldn't load posts. Pull down to try again.</Notice> : null}
-        {empty ? (
+        {undo ? (
+          <View style={{ marginHorizontal: 16, marginTop: 10, borderRadius: 12, backgroundColor: c.sf2, paddingLeft: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <CheckCheck size={18} color={c.tx} />
+            <Text style={{ flex: 1, fontSize: 14, color: c.tx }}>{undo.length === 1 ? 'Cleared 1 read post.' : `Cleared ${undo.length} read posts.`}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Undo clear" onPress={onUndo}
+              style={{ minHeight: 44, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Undo2 size={16} color={c.link} /><Text style={{ color: c.link, fontWeight: '600', fontSize: 15 }}>Undo</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {caughtUp ? (
+          <EmptyState icon={CheckCheck} title="You're all caught up" body="Posts you've cleared are still here if you need them. Search finds them too." />
+        ) : empty ? (
           <EmptyState icon={saved ? Bookmark : Newspaper} title={query ? 'No matching posts' : saved ? 'Nothing saved yet' : 'No posts yet'}
             body={query ? 'Try a different word.' : saved ? 'Tap Save on any post to keep it here, like a permission slip or a supply list.' : isParent(context)
               ? `When ${childrenPossessive(context)} teachers or the school office post, you'll see it here.`
@@ -97,8 +124,33 @@ export default function Home() {
         <View style={{ paddingHorizontal: 16, paddingTop: 8, gap: 12 }}>
           {pinned.length ? <SectionLabel icon={Pin} style={{ paddingTop: 8, paddingBottom: 0, paddingHorizontal: 2 }}>Pinned</SectionLabel> : null}
           {pinned.map((p: FeedPost) => <PostCard key={p.id} post={p} />)}
-          {latest.length ? <SectionLabel icon={saved ? Bookmark : Newspaper} style={{ paddingTop: 8, paddingBottom: 0, paddingHorizontal: 2 }}>{saved ? 'Saved' : 'Latest'}</SectionLabel> : null}
+          {latest.length ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <SectionLabel icon={saved ? Bookmark : Newspaper} style={{ paddingTop: 8, paddingBottom: 0, paddingHorizontal: 2, flex: 1 }}>{saved ? 'Saved' : 'Latest'}</SectionLabel>
+              {canClear ? (
+                <Pressable accessibilityRole="button" accessibilityLabel={`Clear ${clearable} read ${clearable === 1 ? 'post' : 'posts'} from Home`} onPress={onClear} disabled={clearRead.isPending}
+                  style={{ minHeight: 44, paddingTop: 8, paddingLeft: 12, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: clearRead.isPending ? 0.5 : 1 }}>
+                  <CheckCheck size={16} color={c.link} /><Text style={{ color: c.link, fontWeight: '600', fontSize: 15 }}>Clear read</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
           {latest.map((p: FeedPost) => <PostCard key={p.id} post={p} />)}
+          {!saved && !searching ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={showCleared ? 'Hide cleared posts' : 'Show cleared posts'}
+              onPress={() => { setShowCleared((v) => !v); setUndo(null); }}
+              style={{ minHeight: 44, alignSelf: 'center', paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {showCleared ? <EyeOff size={16} color={c.tx2} /> : <Eye size={16} color={c.tx2} />}
+              <Text style={{ color: c.tx2, fontSize: 14, fontWeight: '600' }}>{showCleared ? 'Hide cleared posts' : 'Show cleared posts'}</Text>
+            </Pressable>
+          ) : null}
+          {showCleared && !saved && !searching && latest.some((p) => p.cleared) ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Put all cleared posts back on Home"
+              onPress={() => { restore.mutate(null); setShowCleared(false); }}
+              style={{ minHeight: 44, alignSelf: 'center', paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Undo2 size={16} color={c.link} /><Text style={{ color: c.link, fontSize: 14, fontWeight: '600' }}>Put them all back on Home</Text>
+            </Pressable>
+          ) : null}
         </View>
       </ScrollView>
 

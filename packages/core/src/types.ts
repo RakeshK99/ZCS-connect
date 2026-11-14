@@ -106,6 +106,8 @@ export interface FeedPost {
   acked: boolean;
   /** The viewer saved this post to find it again (older servers omit it). */
   saved?: boolean;
+  /** The viewer cleared this read post from Home (older servers omit it). */
+  cleared?: boolean;
   student_ids: string[] | null;
   attachments: Attachment[];
   reach: ReachSummary | null;

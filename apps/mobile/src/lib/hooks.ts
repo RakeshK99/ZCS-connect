@@ -3,7 +3,7 @@ import { api, isoDay, type ContextKey, type FeedPost, type Message, type Notific
 import { supabase } from './supabase';
 
 export const keys = {
-  feed: (ctx: ContextKey | null, student?: string | null, q?: string, saved = false) => ['feed', ctx, student ?? 'all', q ?? '', saved ? 'saved' : 'all'] as const,
+  feed: (ctx: ContextKey | null, student?: string | null, q?: string, view: FeedView = 'all') => ['feed', ctx, student ?? 'all', q ?? '', view] as const,
   threads: (ctx: ContextKey | null) => ['threads', ctx] as const,
   thread: (id: string) => ['thread', id] as const,
   calendar: (from: string, to: string) => ['calendar', from, to] as const,
@@ -14,10 +14,13 @@ export const keys = {
   contacts: (student: string, ctx: ContextKey) => ['contacts', student, ctx] as const,
 };
 
-export function useFeed(ctx: ContextKey | null, studentId?: string | null, query?: string, saved = false) {
+/** Which slice of the feed: everything still on Home, Saved, or Home plus cleared posts. */
+export type FeedView = 'all' | 'saved' | 'cleared';
+
+export function useFeed(ctx: ContextKey | null, studentId?: string | null, query?: string, view: FeedView = 'all') {
   return useQuery({
-    queryKey: keys.feed(ctx, studentId, query, saved),
-    queryFn: () => api.feed(supabase, ctx!, { studentId, query, limit: 60, saved }),
+    queryKey: keys.feed(ctx, studentId, query, view),
+    queryFn: () => api.feed(supabase, ctx!, { studentId, query, limit: 60, saved: view === 'saved', cleared: view === 'cleared' }),
     enabled: !!ctx,
     refetchInterval: 60_000,
   });
@@ -126,6 +129,28 @@ export function useSetSaved() {
     onMutate: ({ postId, saved }) => {
       qc.setQueriesData<FeedPost[]>({ queryKey: ['feed'] }, (old) => old?.map((p) => (p.id === postId ? { ...p, saved } : p)));
     },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['feed'] }),
+  });
+}
+
+/** Clear read posts from Home. Hides them from cached feeds right away; returns the ids for Undo. */
+export function useClearRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.clearReadPosts(supabase),
+    onSuccess: (ids) => {
+      const gone = new Set(ids);
+      qc.setQueriesData<FeedPost[]>({ queryKey: ['feed'] }, (old) => old?.map((p) => (gone.has(p.id) ? { ...p, cleared: true } : p)));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['feed'] }),
+  });
+}
+
+/** Bring cleared posts back to Home (the given ids, or all). */
+export function useRestoreCleared() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids?: string[] | null) => api.restoreClearedPosts(supabase, ids),
     onSettled: () => qc.invalidateQueries({ queryKey: ['feed'] }),
   });
 }
