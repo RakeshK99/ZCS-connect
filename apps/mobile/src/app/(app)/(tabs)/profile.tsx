@@ -1,7 +1,7 @@
 import { api, isParent, timeOfDay, type NotificationPrefs } from '@zcs/core';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
-import { Calendar, Check, ChevronRight, CircleHelp, Compass, Languages, MessageCircle, Moon, Newspaper, Pin, Repeat, Siren, type LucideIcon } from 'lucide-react-native';
+import { Calendar, Check, ChevronRight, CircleHelp, Compass, Languages, MessageCircle, MessageSquareHeart, Moon, Newspaper, Pin, Repeat, Siren, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -136,6 +136,11 @@ export default function Profile() {
           <Row onPress={() => router.push('/tour')}>
             <Compass size={20} color={c.link} />
             <Text style={{ flex: 1, fontSize: 16, color: c.tx }}>Take the tour</Text>
+            <ChevronRight size={18} color={c.tx3} />
+          </Row>
+          <Row onPress={() => router.push('/feedback')}>
+            <MessageSquareHeart size={20} color={c.link} />
+            <Text style={{ flex: 1, fontSize: 16, color: c.tx }}>Send feedback about the app</Text>
             <ChevronRight size={18} color={c.tx3} />
           </Row>
           <Row last onPress={contactOffice}>

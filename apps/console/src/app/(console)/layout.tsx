@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { admin } from '@zcs/core';
-import { CalendarDays, Contact, FileSpreadsheet, LayoutDashboard, LogOut, MessagesSquare, School, ScrollText, SquarePen, UserPlus, Users, type LucideIcon } from 'lucide-react';
+import { CalendarDays, Contact, FileSpreadsheet, LayoutDashboard, LogOut, MessageSquareHeart, MessagesSquare, School, ScrollText, SquarePen, UserPlus, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
@@ -31,6 +31,7 @@ export default function ConsoleLayout({ children }: { children: ReactNode }) {
     { href: '/classes', label: 'Class lists', icon: School, show: office },
     { href: '/people', label: 'People & roles', icon: Users, show: office },
     { href: '/calendar', label: 'School calendar', icon: CalendarDays, show: office },
+    { href: '/feedback', label: 'App feedback', icon: MessageSquareHeart, show: office },
     { href: '/conversations', label: 'Conversation review', icon: MessagesSquare, show: me.is_admin },
     { href: '/audit', label: 'Audit log', icon: ScrollText, show: me.is_admin },
   ];

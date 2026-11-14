@@ -19,6 +19,7 @@ export default function AppLayout() {
         <Stack.Screen name="new-message" options={{ presentation: 'modal' }} />
         <Stack.Screen name="class-event" options={{ presentation: 'modal' }} />
         <Stack.Screen name="roster-add" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
         <Stack.Screen name="tour" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
       </Stack>
     </RoleSwitcherProvider>
