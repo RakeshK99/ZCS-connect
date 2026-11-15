@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZCS Connect tester survey</title>
+<meta name="description" content="Five minutes to tell us how the ZCS Connect beta is working for you.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cabin:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #041E42; --maize: #F1C400;
+    --bg: #F4F6F9; --sf: #FFFFFF; --sf2: #EDF0F5; --tx: #0E1726; --tx2: #4A5568; --tx3: #6B7686;
+    --bd: #D9DFE8; --bdS: #B8C2D1; --link: #0B4FA8; --sel: #041E42; --selTx: #FFFFFF; --ok: #1F7A4D; --err: #B42318;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B1220; --sf: #131C2E; --sf2: #1B2638; --tx: #EEF2F8; --tx2: #B6C0CF; --tx3: #8C97A8;
+      --bd: #2A364B; --bdS: #3B4962; --link: #8DB8FF; --sel: #F1C400; --selTx: #041E42; --ok: #5BD69A; --err: #FF8A80;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  h1, h2, h3, .heading { font-family: Cabin, -apple-system, sans-serif; font-weight: 700; }
+  header { background: var(--navy); color: #fff; padding: calc(18px + env(safe-area-inset-top)) 16px 20px; }
+  header .in { max-width: 680px; margin: 0 auto; }
+  .eyebrow { color: var(--maize); letter-spacing: .14em; font-size: 13px; font-weight: 700; font-family: Cabin, sans-serif; }
+  header h1 { margin: 6px 0 4px; font-size: 26px; line-height: 1.2; }
+  header p { margin: 0; color: rgba(255,255,255,.82); font-size: 15px; }
+  .bar { height: 6px; background: rgba(255,255,255,.18); border-radius: 3px; margin-top: 16px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--maize); transition: width .25s; }
+  .steps { display: flex; justify-content: space-between; color: rgba(255,255,255,.7); font-size: 13px; margin-top: 6px; }
+  main { max-width: 680px; margin: 0 auto; padding: 16px 16px calc(40px + env(safe-area-inset-bottom)); }
+  section.step { display: none; }
+  section.step.on { display: block; }
+  .card { background: var(--sf); border: 1px solid var(--bd); border-radius: 16px; padding: 18px 16px; margin: 0 0 14px; }
+  .card h2 { font-size: 21px; margin: 0 0 4px; }
+  .hint { color: var(--tx2); font-size: 15px; margin: 0 0 14px; }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  legend { font-weight: 600; padding: 0; margin-bottom: 10px; font-size: 17px; }
+  .q { padding: 14px 0; border-top: 1px solid var(--bd); }
+  .q:first-of-type { border-top: 0; padding-top: 4px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opts.col { flex-direction: column; }
+  .opt { position: relative; }
+  .opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .opt span { display: flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 1px solid var(--bdS); border-radius: 12px; background: var(--sf); cursor: pointer; font-size: 16px; }
+  .opts.col .opt span { width: 100%; }
+  .opt input:checked + span { background: var(--sel); color: var(--selTx); border-color: var(--sel); font-weight: 600; }
+  .opt input:focus-visible + span { outline: 3px solid var(--link); outline-offset: 2px; }
+  .scale { display: grid; gap: 6px; }
+  .scale.s5 { grid-template-columns: repeat(5, 1fr); }
+  .scale.s6 { grid-template-columns: 1.3fr repeat(5, 1fr); }
+  .scale.s11 { grid-template-columns: repeat(11, 1fr); gap: 4px; }
+  .scale .opt span { justify-content: center; text-align: center; padding: 6px 2px; font-size: 14px; line-height: 1.15; min-height: 52px; flex-direction: column; }
+  .scale.s11 .opt span { font-size: 16px; min-height: 44px; border-radius: 10px; }
+  .scale .opt span b { font-size: 17px; }
+  .ends { display: flex; justify-content: space-between; color: var(--tx3); font-size: 13px; margin-top: 6px; }
+  textarea, input[type=text], input[type=email] { width: 100%; font: inherit; color: var(--tx); background: var(--sf); border: 1px solid var(--bdS); border-radius: 12px; padding: 12px 14px; }
+  textarea { min-height: 96px; resize: vertical; }
+  textarea:focus, input:focus { outline: 3px solid var(--link); outline-offset: 1px; border-color: transparent; }
+  label.field { display: block; font-weight: 600; margin: 0 0 8px; }
+  .note { margin-top: 10px; display: none; }
+  .note.on { display: block; }
+  .check { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; cursor: pointer; }
+  .check input { width: 22px; height: 22px; margin-top: 3px; accent-color: var(--navy); }
+  .nav { display: flex; gap: 10px; margin-top: 6px; }
+  button { font: inherit; cursor: pointer; }
+  .btn { min-height: 52px; border-radius: 14px; border: 0; padding: 0 22px; font-family: Cabin, sans-serif; font-size: 18px; font-weight: 700; }
+  .btn.pri { background: var(--sel); color: var(--selTx); flex: 1; }
+  .btn.sec { background: transparent; color: var(--link); border: 1px solid var(--bdS); }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .err { color: var(--err); font-weight: 600; margin: 8px 0 0; display: none; }
+  .err.on { display: block; }
+  .privacy { color: var(--tx3); font-size: 14px; text-align: center; margin-top: 18px; }
+  .done { text-align: center; padding: 28px 16px; }
+  .done .tick { width: 72px; height: 72px; border-radius: 36px; background: var(--sf2); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+  .hp { position: absolute; left: -9999px; }
+  h2:focus { outline: none; }
+  @media (max-width: 420px) {
+    .scale.s6 { grid-template-columns: repeat(3, 1fr); }
+    .scale.s11 { grid-template-columns: repeat(6, 1fr); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="in">
+    <div class="eyebrow">ZCS CONNECT BETA</div>
+    <h1>How's the app working for you?</h1>
+    <p>About 5 minutes. Your answers decide what we fix and build next.</p>
+    <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+    <div class="steps"><span id="stepName">About you</span><span id="stepCount">Step 1 of 5</span></div>
+  </div>
+</header>
+
+<main>
+<form id="f" novalidate>
+  <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+  <!-- 1 · About you -->
+  <section class="step on" data-name="About you">
+    <div class="card">
+      <h2>About you</h2>
+      <p class="hint">So we know which parts of the app you saw.</p>
+      <div class="q"><fieldset>
+        <legend>How do you use ZCS Connect?</legend>
+        <div class="opts col" data-name="role">
+          <label class="opt"><input type="radio" name="role" value="parent" required><span>As a parent</span></label>
+          <label class="opt"><input type="radio" name="role" value="staff"><span>As a teacher or ZCS staff</span></label>
+          <label class="opt"><input type="radio" name="role" value="both"><span>Both: I work at ZCS and have a child there</span></label>
+        </div>
+      </fieldset></div>
+      <div class="q"><fieldset>
+        <legend>How long have you been using it?</legend>
+        <div class="opts">
+          <label class="opt"><input type="radio" name="usage" value="once"><span>Just tried it once</span></label>
+          <label class="opt"><input type="radio" name="usage" value="few_days"><span>A few days</span></label>
+          <label class="opt"><input type="radio" name="usage" value="one_two_weeks"><span>1–2 weeks</span></label>
+          <label class="opt"><input type="radio" name="usage" value="longer"><span>Longer</span></label>
+        </div>
+      </fieldset></div>
+      <div class="q"><fieldset>
+        <legend>How did you sign in?</legend>
+        <div class="opts">
+          <label class="opt"><input type="radio" name="sign_in" value="email"><span>Code sent to my email</span></label>
+          <label class="opt"><input type="radio" name="sign_in" value="apple"><span>Apple</span></label>
+          <label class="opt"><input type="radio" name="sign_in" value="google"><span>Google</span></label>
+          <label class="opt"><input type="radio" name="sign_in" value="demo"><span>Demo account</span></label>
+          <label class="opt"><input type="radio" name="sign_in" value="failed"><span>I couldn't sign in</span></label>
+        </div>
+      </fieldset></div>
+    </div>
+  </section>
+
+  <!-- 2 · Tasks -->
+  <section class="step" data-name="What you did">
+    <div class="card">
+      <h2>What you did in the app</h2>
+      <p class="hint">How easy was each one? Pick <b>Didn't try</b> for anything you didn't get to.</p>
+      <div id="tasks"></div>
+    </div>
+  </section>
+
+  <!-- 3 · Overall (System Usability Scale) -->
+  <section class="step" data-name="Overall">
+    <div class="card">
+      <h2>Overall</h2>
+      <p class="hint">How much do you agree with each statement? Go with your first reaction.</p>
+      <div id="sus"></div>
+    </div>
+  </section>
+
+  <!-- 4 · In your words -->
+  <section class="step" data-name="In your words">
+    <div class="card">
+      <h2>In your words</h2>
+      <p class="hint">Short answers are perfect. Skip any you like.</p>
+      <div class="q"><label class="field" for="useful">What was most useful?</label>
+        <textarea id="useful" name="useful" maxlength="2000"></textarea></div>
+      <div class="q"><label class="field" for="frustrating">What was most confusing or frustrating?</label>
+        <textarea id="frustrating" name="frustrating" maxlength="2000"></textarea>
+        <fieldset style="margin-top:12px"><legend style="font-size:15px;font-weight:500;color:var(--tx2)">How much did it get in your way?</legend>
+          <div class="opts">
+            <label class="opt"><input type="radio" name="frustrating_impact" value="minor"><span>A little</span></label>
+            <label class="opt"><input type="radio" name="frustrating_impact" value="annoying"><span>It was annoying</span></label>
+            <label class="opt"><input type="radio" name="frustrating_impact" value="blocked"><span>It stopped me</span></label>
+          </div>
+        </fieldset></div>
+      <div class="q"><label class="field" for="broken">Did anything break or look wrong? What were you doing?</label>
+        <textarea id="broken" name="broken" maxlength="2000" placeholder="For example: I tapped Save on a post and nothing happened."></textarea></div>
+      <div class="q"><label class="field" for="wish">If you could add or change one thing, what would it be?</label>
+        <textarea id="wish" name="wish" maxlength="2000"></textarea></div>
+    </div>
+  </section>
+
+  <!-- 5 · Wrap up -->
+  <section class="step" data-name="Wrap up">
+    <div class="card">
+      <h2>Last few</h2>
+      <div class="q"><fieldset>
+        <legend id="recLegend">How likely are you to recommend ZCS Connect to another ZCS family?</legend>
+        <div class="scale s11" id="recommend"></div>
+        <div class="ends"><span>0 · Not at all likely</span><span>10 · Extremely likely</span></div>
+      </fieldset></div>
+      <div class="q"><fieldset>
+        <legend>Compared with how you get school news today (email, paper notes, other apps), ZCS Connect is…</legend>
+        <div class="scale s5">
+          <label class="opt"><input type="radio" name="compared" value="1"><span>Much worse</span></label>
+          <label class="opt"><input type="radio" name="compared" value="2"><span>Worse</span></label>
+          <label class="opt"><input type="radio" name="compared" value="3"><span>About the same</span></label>
+          <label class="opt"><input type="radio" name="compared" value="4"><span>Better</span></label>
+          <label class="opt"><input type="radio" name="compared" value="5"><span>Much better</span></label>
+        </div>
+      </fieldset></div>
+      <div class="q"><fieldset>
+        <legend>Notifications were…</legend>
+        <div class="opts">
+          <label class="opt"><input type="radio" name="notifications" value="too_many"><span>Too many</span></label>
+          <label class="opt"><input type="radio" name="notifications" value="right"><span>About right</span></label>
+          <label class="opt"><input type="radio" name="notifications" value="too_few"><span>Too few</span></label>
+          <label class="opt"><input type="radio" name="notifications" value="off"><span>I turned them off</span></label>
+          <label class="opt"><input type="radio" name="notifications" value="none"><span>I didn't get any</span></label>
+        </div>
+      </fieldset></div>
+      <div class="q">
+        <label class="field" for="name">Your name <span style="font-weight:400;color:var(--tx3)">(optional)</span></label>
+        <input type="text" id="name" name="name" autocomplete="name" maxlength="120">
+        <label class="field" for="email" style="margin-top:12px">Email <span style="font-weight:400;color:var(--tx3)">(optional)</span></label>
+        <input type="email" id="email" name="email" autocomplete="email" maxlength="200">
+        <label class="check" style="margin-top:12px"><input type="checkbox" name="contact_ok"><span>It's OK to email me with a follow-up question.</span></label>
+      </div>
+    </div>
+  </section>
+
+  <p class="err" id="err" role="alert"></p>
+  <div class="nav">
+    <button type="button" class="btn sec" id="back" hidden>Back</button>
+    <button type="button" class="btn pri" id="next">Next</button>
+  </div>
+  <p class="privacy">Only the ZCS Connect team sees your answers. Please don't include private details about your child.</p>
+</form>
+
+<div class="card done" id="done" hidden tabindex="-1">
+  <div class="tick" aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ok)"><path d="M20 6 9 17l-5-5"/></svg></div>
+  <h2>Thank you!</h2>
+  <p class="hint" style="margin:0 auto 16px;max-width:420px">Your answers were sent. We read every one, and they decide what we fix and build next.</p>
+  <button type="button" class="btn sec" id="edit">Change my answers</button>
+</div>
+</main>
+
+<script>
+(() => {
+  const SUPABASE_URL = 'https://bymugelbfznkynivvckp.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_urP4CiiM2NU1eojT8bFVdw_VW8Sm-5d';
+  const STORE = 'zcs-survey-v1';
+
+  const TASKS = {
+    shared: [['signin', 'Signing in'], ['notify', 'Getting notifications on your phone']],
+    parent: [['read', 'Reading posts from school and teachers'], ['confirm', 'Confirming you’ve read a post (when asked)'],
+             ['save', 'Saving a post to find later'], ['clear', 'Clearing read posts from Home'],
+             ['message', 'Messaging a teacher'], ['calendar', 'Checking the calendar']],
+    staff: [['post', 'Sending a post to your class or the school'], ['reach', 'Checking which families saw your post'],
+            ['reply', 'Replying to messages from families'], ['classlist', 'Adding or removing a student in your class list'],
+            ['classevent', 'Adding a class event'], ['website', 'Using the staff website']],
+  };
+  const EASE = [['0', 'Didn’t try'], ['1', 'Very hard'], ['2', 'Hard'], ['3', 'OK'], ['4', 'Easy'], ['5', 'Very easy']];
+  // System Usability Scale (Brooke, 1986), in plain words. Odd items positive, even items negative.
+  const SUS = [
+    'I think I would like to use ZCS Connect often.',
+    'ZCS Connect was more complicated than it needed to be.',
+    'ZCS Connect was easy to use.',
+    'I would need help from someone to be able to use ZCS Connect.',
+    'The different parts of ZCS Connect fit together well.',
+    'Some parts of ZCS Connect didn’t work the way the rest did.',
+    'Most people would learn to use ZCS Connect very quickly.',
+    'ZCS Connect felt awkward to use.',
+    'I felt confident using ZCS Connect.',
+    'I had to learn a lot before I could get going with ZCS Connect.',
+  ];
+  const AGREE = ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'];
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const f = $('#f');
+  const steps = [...document.querySelectorAll('section.step')];
+  let step = 0;
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  const store = {
+    get() { try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch { return {}; } },
+    set(v) { try { localStorage.setItem(STORE, JSON.stringify(v)); } catch { /* private mode: answers still send */ } },
+  };
+  const saved = store.get();
+  const clientId = saved.client_id || (crypto.randomUUID ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+
+  // ---- build the generated questions
+  $('#sus').innerHTML = SUS.map((q, i) => `
+    <div class="q"><fieldset><legend>${i + 1}. ${esc(q)}</legend>
+      <div class="scale s5">${AGREE.map((a, j) => `<label class="opt"><input type="radio" name="sus${i}" value="${j + 1}"><span>${a}</span></label>`).join('')}</div>
+    </fieldset></div>`).join('');
+  $('#recommend').innerHTML = Array.from({ length: 11 }, (_, n) =>
+    `<label class="opt"><input type="radio" name="recommend" value="${n}" aria-label="${n} out of 10"><span>${n}</span></label>`).join('');
+
+  const role = () => (f.role.value || 'parent');
+  function taskList() {
+    const r = role();
+    return [...TASKS.shared.slice(0, 1), ...(r !== 'staff' ? TASKS.parent : []), ...(r !== 'parent' ? TASKS.staff : []), ...TASKS.shared.slice(1)];
+  }
+  function renderTasks(keep = collect().tasks) {
+    $('#tasks').innerHTML = taskList().map(([k, label]) => `
+      <div class="q"><fieldset><legend>${esc(label)}</legend>
+        <div class="scale s6">${EASE.map(([v, l]) => `<label class="opt"><input type="radio" name="t_${k}" value="${v}" data-task="${k}"><span>${v === '0' ? l : `<b>${v}</b>${l}`}</span></label>`).join('')}</div>
+        <div class="note" id="n_${k}"><label class="field" for="tn_${k}" style="font-weight:500;font-size:15px;color:var(--tx2)">What got in the way?</label>
+          <textarea id="tn_${k}" name="tn_${k}" maxlength="1000" style="min-height:72px"></textarea></div>
+      </fieldset></div>`).join('');
+    for (const [k, t] of Object.entries(keep)) {
+      const input = f.querySelector(`input[name="t_${k}"][value="${t.ease}"]`);
+      if (input) input.checked = true;
+      if (f[`tn_${k}`] && t.note) f[`tn_${k}`].value = t.note;
+      showNote(k);
+    }
+  }
+  function showNote(k) {
+    const v = Number((f.querySelector(`input[name="t_${k}"]:checked`) || {}).value || 0);
+    const n = $(`#n_${k}`);
+    if (n) n.classList.toggle('on', v === 1 || v === 2 || !!(f[`tn_${k}`] && f[`tn_${k}`].value));
+  }
+
+  // ---- read the form into the shape the database expects
+  function collect() {
+    const val = (n) => { const el = f.querySelector(`[name="${n}"]:checked`); return el ? el.value : null; };
+    const tasks = {};
+    f.querySelectorAll('input[data-task]:checked').forEach((el) => {
+      const k = el.dataset.task; const note = f[`tn_${k}`] ? f[`tn_${k}`].value.trim() : '';
+      tasks[k] = note ? { ease: Number(el.value), note } : { ease: Number(el.value) };
+    });
+    const sus = SUS.map((_, i) => val(`sus${i}`));
+    return {
+      client_id: clientId, role: val('role'), usage: val('usage'), sign_in: val('sign_in'), tasks,
+      sus: sus.every(Boolean) ? sus.map(Number) : null, sus_partial: sus.map((x) => (x ? Number(x) : null)),
+      recommend: val('recommend') === null ? null : Number(val('recommend')),
+      compared: val('compared') === null ? null : Number(val('compared')),
+      notifications: val('notifications'),
+      useful: f.useful.value, frustrating: f.frustrating.value, frustrating_impact: val('frustrating_impact'),
+      broken: f.broken.value, wish: f.wish.value, name: f.name.value, email: f.email.value, contact_ok: f.contact_ok.checked,
+    };
+  }
+  function restore(d) {
+    const set = (n, v) => { if (v === null || v === undefined) return; const el = f.querySelector(`input[name="${n}"][value="${v}"]`); if (el) el.checked = true; };
+    ['role', 'usage', 'sign_in', 'recommend', 'compared', 'notifications', 'frustrating_impact'].forEach((n) => set(n, d[n]));
+    (d.sus_partial || d.sus || []).forEach((v, i) => set(`sus${i}`, v));
+    ['useful', 'frustrating', 'broken', 'wish', 'name', 'email'].forEach((n) => { if (d[n]) f[n].value = d[n]; });
+    f.contact_ok.checked = !!d.contact_ok;
+  }
+
+  // ---- steps
+  function show(i, focus = true) {
+    step = i;
+    steps.forEach((s, j) => s.classList.toggle('on', j === i));
+    $('#bar').style.width = `${((i + 1) / steps.length) * 100}%`;
+    $('#stepName').textContent = steps[i].dataset.name;
+    $('#stepCount').textContent = `Step ${i + 1} of ${steps.length}`;
+    $('#back').hidden = i === 0;
+    $('#next').textContent = i === steps.length - 1 ? 'Send my answers' : 'Next';
+    $('#recLegend').textContent = role() === 'staff' ? 'How likely are you to recommend ZCS Connect to a colleague?' : 'How likely are you to recommend ZCS Connect to another ZCS family?';
+    error('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const h = steps[i].querySelector('h2'); if (h && focus) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+  }
+  function error(msg) { const e = $('#err'); e.textContent = msg; e.classList.toggle('on', !!msg); }
+  function check(i) {
+    const d = collect();
+    if (i === 0 && !d.role) return 'Please choose how you use ZCS Connect.';
+    if (i === 2) {
+      const missing = d.sus_partial.map((v, j) => (v ? null : j + 1)).filter(Boolean);
+      if (missing.length && missing.length < 10) return `Please answer ${missing.length === 1 ? 'statement' : 'statements'} ${missing.join(', ')} (or skip them all).`;
+    }
+    return '';
+  }
+
+  async function send() {
+    if (f.website.value) return finish(); // bot
+    const d = collect(); delete d.sus_partial;
+    const btn = $('#next'); btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_tester_survey`, {
+        method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p: d }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.message || 'Something went wrong.'); }
+      store.set({ ...collect(), sent_at: new Date().toISOString() });
+      finish();
+    } catch (e) {
+      error(`${e.message} Your answers are still here. Please try again.`);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send my answers';
+    }
+  }
+  function finish() {
+    f.hidden = true; $('#done').hidden = false; $('#done').focus();
+    $('#bar').style.width = '100%'; $('#stepName').textContent = 'Done'; $('#stepCount').textContent = '';
+    window.scrollTo({ top: 0 });
+  }
+
+  $('#next').addEventListener('click', () => {
+    const msg = check(step); if (msg) return error(msg);
+    if (step === 0) renderTasks();
+    if (step < steps.length - 1) show(step + 1); else send();
+  });
+  $('#back').addEventListener('click', () => show(Math.max(0, step - 1)));
+  $('#edit').addEventListener('click', () => { $('#done').hidden = true; f.hidden = false; show(0); });
+  f.addEventListener('change', (e) => {
+    if (e.target.dataset && e.target.dataset.task) showNote(e.target.dataset.task);
+    store.set({ ...store.get(), ...collect() });
+  });
+  f.addEventListener('input', () => store.set({ ...store.get(), ...collect() }));
+  f.addEventListener('submit', (e) => e.preventDefault());
+
+  // ---- start: ?role=parent|staff preselects; a saved draft comes back
+  const q = new URLSearchParams(location.search).get('role');
+  restore(saved);
+  if (!saved.role && ['parent', 'staff', 'both'].includes(q)) restore({ role: q });
+  store.set({ ...saved, client_id: clientId });
+  renderTasks(saved.tasks || {});
+  show(0, false);
+})();
+</script>
+</body>
+</html>
