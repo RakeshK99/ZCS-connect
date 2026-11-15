@@ -30,6 +30,8 @@ export const api = {
   sessionInfo: (db: SupabaseClient) => rpc<SessionInfo>(db, 'session_info'),
   requestFamilyLink: (db: SupabaseClient, note?: string) => rpc<void>(db, 'request_family_link', { p_note: note ?? null }),
   deleteMyAccount: (db: SupabaseClient) => rpc<void>(db, 'delete_my_account'),
+  /** "Send feedback" from the app. Only version/build/platform/os/context/screen are kept from meta. */
+  sendFeedback: (db: SupabaseClient, body: string, meta: Record<string, string> = {}) => rpc<string>(db, 'send_feedback', { p_body: body, p_meta: meta }),
 
   // feed & posts
   /** Newest first. To page, pass the last post's `sent_at` and `id` as `before` / `beforeId`. */

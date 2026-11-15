@@ -43,6 +43,12 @@ export interface OversightThread { id: string; student: string; grade: string | 
 export interface OversightMessage { id: string; sender: string; sender_context: 'parent' | 'staff'; body: string; created_at: string }
 export interface AuditRow { id: number; action: string; target_type: string | null; target_id: string | null; detail: Record<string, unknown>; at: string; actor_id: string | null }
 export interface Option { id: string; label: string }
+/** A note sent from the app's "Send feedback". name/email/who are null once the sender deletes their account. */
+export interface FeedbackNote {
+  id: string; body: string; status: 'new' | 'done'; created_at: string;
+  meta: { version?: string; build?: string; platform?: string; os?: string; context?: string; screen?: string };
+  name: string | null; email: string | null; who: 'Staff' | 'Family' | null;
+}
 export interface GuardianLink {
   id: string; person_id: string; name: string; email: string; relationship: string; no_contact: boolean; hide_contact: boolean;
   can_sign_forms: boolean; locked_by_office: boolean; source: 'import' | 'office'; is_active: boolean; signed_in: boolean;
@@ -51,6 +57,8 @@ export interface StudentGuardians { id: string; name: string; grade: string | nu
 
 export const admin = {
   stats: (db: SupabaseClient) => rpc<SchoolStats>(db, 'school_stats'),
+  feedback: (db: SupabaseClient, status?: 'new' | 'done' | null) => rpc<FeedbackNote[]>(db, 'office_feedback', { p_status: status ?? null }),
+  setFeedbackStatus: (db: SupabaseClient, id: string, status: 'new' | 'done') => rpc<void>(db, 'set_feedback_status', { p_id: id, p_status: status }),
   recentSends: (db: SupabaseClient, limit = 25) => rpc<RecentSend[]>(db, 'recent_sends', { p_limit: limit }),
 
   people: (db: SupabaseClient, query?: string, staffOnly = false) => rpc<PersonRow[]>(db, 'admin_people', { p_query: query || null, p_staff_only: staffOnly }),
