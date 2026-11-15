@@ -43,6 +43,21 @@ export interface OversightThread { id: string; student: string; grade: string | 
 export interface OversightMessage { id: string; sender: string; sender_context: 'parent' | 'staff'; body: string; created_at: string }
 export interface AuditRow { id: number; action: string; target_type: string | null; target_id: string | null; detail: Record<string, unknown>; at: string; actor_id: string | null }
 export interface Option { id: string; label: string }
+/** One answer to the web tester survey (site/survey). Ease is 1–5, 0 = didn't try. */
+export interface SurveyResponse {
+  id: string; role: 'parent' | 'staff' | 'both'; usage: string | null; sign_in: string | null;
+  tasks: Record<string, { ease: number; note?: string }>; sus: number[] | null; sus_score: number | null;
+  recommend: number | null; compared: number | null; notifications: string | null;
+  useful: string | null; frustrating: string | null; frustrating_impact: string | null; broken: string | null; wish: string | null;
+  name: string | null; email: string | null; contact_ok: boolean; created_at: string; updated_at: string;
+}
+export interface SurveyReport {
+  responses: number; by_role: Record<string, number>;
+  sus_avg: number | null; sus_n: number; nps: number | null; recommend_avg: number | null; recommend_n: number; compared_avg: number | null;
+  counts: Record<'usage' | 'sign_in' | 'notifications' | 'compared' | 'frustrating_impact', Record<string, number>>;
+  tasks: { key: string; answered: number; tried: number; avg_ease: number | null; hard: number }[];
+  rows: SurveyResponse[];
+}
 /** A note sent from the app's "Send feedback". name/email/who are null once the sender deletes their account. */
 export interface FeedbackNote {
   id: string; body: string; status: 'new' | 'done'; created_at: string;
@@ -57,6 +72,7 @@ export interface StudentGuardians { id: string; name: string; grade: string | nu
 
 export const admin = {
   stats: (db: SupabaseClient) => rpc<SchoolStats>(db, 'school_stats'),
+  surveyReport: (db: SupabaseClient) => rpc<SurveyReport>(db, 'tester_survey_report'),
   feedback: (db: SupabaseClient, status?: 'new' | 'done' | null) => rpc<FeedbackNote[]>(db, 'office_feedback', { p_status: status ?? null }),
   setFeedbackStatus: (db: SupabaseClient, id: string, status: 'new' | 'done') => rpc<void>(db, 'set_feedback_status', { p_id: id, p_status: status }),
   recentSends: (db: SupabaseClient, limit = 25) => rpc<RecentSend[]>(db, 'recent_sends', { p_limit: limit }),
