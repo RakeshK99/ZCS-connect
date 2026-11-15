@@ -23,7 +23,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_DEMO_LOGIN": "1",
-        "EXPO_PUBLIC_GOOGLE_SIGN_IN": "1",
+        "EXPO_PUBLIC_GOOGLE_SIGN_IN": "0",
         "EXPO_PUBLIC_APPLE_SIGN_IN": "1"
       }
     },
@@ -32,7 +32,7 @@
       "distribution": "store",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_GOOGLE_SIGN_IN": "1",
+        "EXPO_PUBLIC_GOOGLE_SIGN_IN": "0",
         "EXPO_PUBLIC_APPLE_SIGN_IN": "1"
       }
     }
