@@ -60,6 +60,8 @@ export const api = {
   editPost: (db: SupabaseClient, postId: string, title: string, body: string) =>
     rpc<void>(db, 'edit_post', { p_post: postId, p_title: title, p_body: body }),
   cancelPost: (db: SupabaseClient, postId: string) => rpc<void>(db, 'cancel_post', { p_post: postId }),
+  /** Remove a sent post for everyone (author or office). Audited; queued notifications are dropped. */
+  deletePost: (db: SupabaseClient, postId: string) => rpc<void>(db, 'delete_post', { p_post: postId }),
   postReach: (db: SupabaseClient, postId: string) => rpc<PostReach>(db, 'post_reach', { p_post: postId }),
   remindFamilies: (db: SupabaseClient, postId: string, studentIds: string[]) =>
     rpc<number>(db, 'remind_families', { p_post: postId, p_student_ids: studentIds }),

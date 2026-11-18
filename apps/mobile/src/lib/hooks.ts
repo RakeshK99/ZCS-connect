@@ -154,3 +154,15 @@ export function useRestoreCleared() {
     onSettled: () => qc.invalidateQueries({ queryKey: ['feed'] }),
   });
 }
+
+/** Delete a post for everyone (author or office). Drops it from every cached feed at once. */
+export function useDeletePost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: string) => api.deletePost(supabase, postId),
+    onSuccess: (_, postId) => {
+      qc.setQueriesData<FeedPost[]>({ queryKey: ['feed'] }, (old) => old?.filter((p) => p.id !== postId));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['feed'] }),
+  });
+}

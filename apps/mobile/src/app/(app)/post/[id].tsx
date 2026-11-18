@@ -1,12 +1,12 @@
 import { clockTime, initials, relativeTime } from '@zcs/core';
 import { router, useLocalSearchParams } from 'expo-router';
-import { BarChart3, Bookmark, Check, CircleCheck, Pin, Share2, Siren, Users } from 'lucide-react-native';
+import { BarChart3, Bookmark, Check, CircleCheck, Pin, Share2, Siren, Trash2, Users } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { ScrollView, Share, Text, View } from 'react-native';
+import { Alert, ScrollView, Share, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, BackButton, Button, EmptyState, IconButton, NavBar, Pill } from '@/components/ui';
 import { AttachmentStrip } from '@/features/feed/Attachments';
-import { useAcknowledge, useCachedPost, useMarkRead, useSetSaved } from '@/lib/hooks';
+import { useAcknowledge, useCachedPost, useDeletePost, useMarkRead, useSetSaved } from '@/lib/hooks';
 import { LinkedText } from '@/components/LinkedText';
 import { useLinked } from '@/lib/session';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -16,11 +16,12 @@ export default function PostDetail() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { contextKey } = useLinked();
+  const { contextKey, linked } = useLinked();
   const { post, loading } = useCachedPost(id, contextKey);
   const markRead = useMarkRead();
   const ack = useAcknowledge();
   const save = useSetSaved();
+  const del = useDeletePost();
 
   useEffect(() => { if (post && !post.read && !post.mine) markRead.mutate(post.id); }, [post?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -37,6 +38,15 @@ export default function PostDetail() {
   const important = post.priority === 'important';
   const fg = emergency ? '#fff' : c.link;
   const showAck = post.require_ack && !post.mine;
+  // The sender can delete their post; the office can delete any post (from the staff side).
+  const canDelete = post.mine || (contextKey === 'staff' && linked.is_office);
+  const confirmDelete = () => Alert.alert('Delete this post?', 'It will be removed for everyone who received it. This can\'t be undone.', [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: () => del.mutate(post.id, {
+      onSuccess: () => (router.canGoBack() ? router.back() : router.replace('/home')),
+      onError: (e) => Alert.alert('Delete post', (e as Error).message),
+    }) },
+  ]);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.sf }}>
@@ -47,6 +57,7 @@ export default function PostDetail() {
               <IconButton icon={Bookmark} label={post.saved ? 'Saved. Tap to remove from Saved' : 'Save this post'} color={fg} size={20}
                 fill={post.saved ? fg : undefined} onPress={() => save.mutate({ postId: post.id, saved: !post.saved })} />
               <IconButton icon={Share2} label="Share" color={fg} size={20} onPress={() => Share.share({ message: `${post.title}\n\n${post.body}` })} />
+              {canDelete ? <IconButton icon={Trash2} label="Delete this post" color={fg} size={20} onPress={confirmDelete} /> : null}
             </View>
           } />
         {emergency ? (
