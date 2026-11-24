@@ -19,7 +19,7 @@ const PARENT: Slide[] = [
   { icon: Newspaper, title: 'Everything from school, in one place', body: 'Posts from your children\'s teachers and the school office land on Home. Tap a child\'s name at the top to see only theirs.' },
   { icon: Bookmark, title: 'Confirm, save and search', body: 'When a teacher asks, tap "I\'ve read this" so they know. Tap Save on a post to keep it under Saved, and search to find anything again.' },
   { icon: MessageCircle, title: 'Message your child\'s teachers', body: 'Messages keeps a private conversation with each teacher, grouped by child. Each teacher shows when they usually reply.' },
-  { icon: CalendarDays, title: 'Never miss a date', body: 'Calendar shows school events, no-school days and your child\'s class events. Tap the calendar button on any event to add it to your phone.' },
+  { icon: CalendarDays, title: 'Never miss a date', body: 'School info has the hot lunch menu, athletics and other school links, plus the calendar: school events, no-school days and your child\'s class events. Tap the calendar button on any event to add it to your phone.' },
   { icon: Bell, title: 'Choose what reaches you', body: 'In Profile, pick which notifications you get and set quiet hours. Emergency alerts always come through.' },
 ];
 
@@ -27,7 +27,7 @@ const STAFF: Slide[] = [
   { icon: SquarePen, title: 'Post to your class in seconds', body: 'Tap New post, pick the class and write. The first line becomes the title. Add photos, ask families to confirm they read it, or schedule it for 7:00 AM.' },
   { icon: BarChart3, title: 'See who it reached', body: 'After you send, you\'ll see how many families got it and read it. Remind the ones who haven\'t with one tap.' },
   { icon: Users, title: 'Your classes and families', body: 'Classes shows each roster with the guardians you can reach. Message a family from there or from Messages.' },
-  { icon: CalendarPlus, title: 'Add class events', body: 'Field trip or theme day? In Calendar, tap Add class event. Only that class\'s families see it.' },
+  { icon: CalendarPlus, title: 'Add class events', body: 'Field trip or theme day? In School info, tap Add class event. Only that class\'s families see it.' },
 ];
 
 export default function Tour() {
