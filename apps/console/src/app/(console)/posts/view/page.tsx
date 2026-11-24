@@ -1,9 +1,9 @@
 'use client';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, type FamilyStatus } from '@zcs/core';
-import { ArrowLeft, Download, Mail } from 'lucide-react';
+import { ArrowLeft, Download, Mail, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { Badge, Button, Card, ErrorNote, PageHeader, ReachBar, SectionTitle, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +26,8 @@ function PostReach() {
   const id = useSearchParams().get('id') ?? '';
   const reach = useQuery({ queryKey: ['reach', id], queryFn: () => api.postReach(supabase, id), enabled: !!id, refetchInterval: 5000 });
   const [reminded, setReminded] = useState<string | null>(null);
+  const router = useRouter();
+  const del = useMutation({ mutationFn: () => api.deletePost(supabase, id), onSuccess: () => router.replace('/') });
   const remind = useMutation({
     mutationFn: (ids: string[]) => api.remindFamilies(supabase, id, ids),
     onSuccess: (n) => setReminded(`Reminder emailed to ${n} guardian${n === 1 ? '' : 's'}.`),
@@ -41,7 +43,12 @@ function PostReach() {
         <>
           <PageHeader title={d.post.title}
             sub={<>{d.post.audience_label} · {d.post.sent_at ? new Date(d.post.sent_at).toLocaleString() : `Status: ${d.post.status}`} {d.post.priority !== 'normal' ? <Badge tone={d.post.priority === 'emergency' ? 'red' : 'maize'}>{d.post.priority}</Badge> : null}</>}
-            actions={<Button variant="secondary" icon={Download} onClick={() => csv(d.families)}>Export CSV</Button>} />
+            actions={<div className="flex gap-2">
+              <Button variant="secondary" icon={Download} onClick={() => csv(d.families)}>Export CSV</Button>
+              <Button variant="danger" icon={Trash2} loading={del.isPending}
+                onClick={() => { if (confirm('Delete this post for everyone who received it? This can\'t be undone.')) del.mutate(); }}>Delete post</Button>
+            </div>} />
+          <ErrorNote error={del.error} />
           <Card className="p-6 space-y-4">
             <div className="font-heading font-bold text-2xl">{d.summary.reached} of {d.summary.families} families reached <span className="text-tx2">· {d.summary.read} read</span></div>
             <ReachBar {...d.summary} />
