@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { hasClasses } from '@zcs/core';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
-import { Calendar, CircleUser, House, MessageCircle, Users, type LucideIcon } from 'lucide-react-native';
+import { CircleUser, House, MessageCircle, School, Users, type LucideIcon } from 'lucide-react-native';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThreads } from '@/lib/hooks';
@@ -15,7 +15,7 @@ const META: Record<string, { label: string; icon: LucideIcon }> = {
   home: { label: 'Home', icon: House },
   classes: { label: 'Classes', icon: Users },
   messages: { label: 'Messages', icon: MessageCircle },
-  calendar: { label: 'Calendar', icon: Calendar },
+  calendar: { label: 'School info', icon: School },
   profile: { label: 'Profile', icon: CircleUser },
 };
 

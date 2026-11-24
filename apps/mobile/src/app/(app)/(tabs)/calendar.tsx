@@ -1,11 +1,14 @@
 import { api, isStaff, isoDay, parseIsoDay, timeOfDay, type CalendarEvent } from '@zcs/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { CalendarPlus, ChevronLeft, ChevronRight, Plus, Users } from 'lucide-react-native';
+import { CalendarPlus, CalendarRange, ChevronLeft, ChevronRight, ClipboardCheck, ExternalLink, Plus, Trophy, Users, UtensilsCrossed, Wallet, type LucideIcon } from 'lucide-react-native';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, IconButton, ScreenTitle, SectionLabel, Segmented } from '@/components/ui';
+import { Button, Group, IconButton, Row, ScreenTitle, SectionLabel, Segmented } from '@/components/ui';
+import { FAMILIES_PAGE, FAMILY_LINKS } from '@/lib/school';
 import { useToast } from '@/components/Toast';
 import { addToPhoneCalendar } from '@/features/calendar/addToCalendar';
 import { useCalendar } from '@/lib/hooks';
@@ -15,6 +18,10 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { font } from '@/theme/tokens';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const LINK_ICONS: Record<(typeof FAMILY_LINKS)[number]['id'], LucideIcon> = {
+  'lunch-menu': UtensilsCrossed, 'lunch-account': Wallet, 'calendar-overview': CalendarRange, athletics: Trophy, enrollment: ClipboardCheck,
+};
+const openLink = (url: string) => WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
 
 function occursOn(e: CalendarEvent, day: string) {
   return e.starts_on <= day && (e.ends_on ?? e.starts_on) >= day;
@@ -90,12 +97,32 @@ export default function CalendarScreen() {
             <Text style={{ color: c.link, fontSize: 17 }}>Today</Text>
           </Pressable>
         </View>
-        <ScreenTitle>Calendar</ScreenTitle>
-        <View style={{ marginTop: 12 }}>
-          <Segmented value={view} onChange={setView} options={[{ id: 'month', label: 'Month' }, { id: 'agenda', label: 'Agenda' }]} />
-        </View>
+        <ScreenTitle>School info</ScreenTitle>
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 110 }}>
+        <Group>
+          {FAMILY_LINKS.map((l, i) => {
+            const Icon = LINK_ICONS[l.id];
+            return (
+              <Row key={l.id} accessibilityRole="link" accessibilityLabel={`${l.label}. ${l.sub}. Opens zcs.org`} onPress={() => openLink(l.url)}>
+                <Icon size={20} color={c.link} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, color: c.tx }}>{l.label}</Text>
+                  <Text style={{ fontSize: 13, color: c.tx2 }}>{l.sub}</Text>
+                </View>
+                <ExternalLink size={16} color={c.tx3} />
+              </Row>
+            );
+          })}
+          <Row last accessibilityRole="link" accessibilityLabel="Everything for families on zcs.org" onPress={() => openLink(FAMILIES_PAGE)}>
+            <Text style={{ flex: 1, fontSize: 15, color: c.link, fontWeight: '600' }}>More for families on zcs.org</Text>
+            <ExternalLink size={16} color={c.tx3} />
+          </Row>
+        </Group>
+        <SectionLabel style={{ paddingTop: 22 }}>Calendar</SectionLabel>
+        <View style={{ marginBottom: 12 }}>
+          <Segmented value={view} onChange={setView} options={[{ id: 'month', label: 'Month' }, { id: 'agenda', label: 'Agenda' }]} />
+        </View>
         {view === 'month' ? (
           <View style={{ backgroundColor: c.sf, borderWidth: 1, borderColor: c.bd, borderRadius: 18, paddingTop: 12, paddingHorizontal: 10, paddingBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingBottom: 8 }}>
