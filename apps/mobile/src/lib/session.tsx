@@ -84,7 +84,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     const { unregisterThisDevice } = await import('./notifications');
     await unregisterThisDevice().catch(() => {});
-    await supabase.auth.signOut();
+    // Only this phone. A global sign-out would also end the person's other sessions (the staff website, another phone).
+    await supabase.auth.signOut({ scope: 'local' });
     await AsyncStorage.multiRemove([INFO_KEY, CTX_KEY]).catch(() => {});
     qc.clear();
     setInfo(null);

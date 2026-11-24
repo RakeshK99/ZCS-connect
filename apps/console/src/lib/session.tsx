@@ -36,7 +36,8 @@ export function Providers({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); qc.clear(); };
+  // Only this browser: a global sign-out would also sign the person out of the app on their phone.
+  const signOut = async () => { await supabase.auth.signOut({ scope: 'local' }); qc.clear(); };
   return (
     <QueryClientProvider client={qc}>
       <Ctx.Provider value={{ ...state, signOut }}>{children}</Ctx.Provider>
