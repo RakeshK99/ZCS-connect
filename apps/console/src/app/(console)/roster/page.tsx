@@ -3,7 +3,7 @@
 // 1 Upload → 2 Check columns → 3 Preview changes → 4 Done (reversible).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  admin, gradeFromSheetName, guessField, hasHeaderRow, parseMappedRows, parseSmartRow, ROSTER_FIELDS,
+  admin, gradeFromSheetName, guessField, hasHeaderRow, isParentPerRow, parseMappedRows, parseParentRows, parseSmartRow, ROSTER_FIELDS,
   type RosterField, type RosterPreview, type RosterRow,
 } from '@zcs/core';
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, RotateCcw, Upload } from 'lucide-react';
@@ -31,6 +31,8 @@ export default function RosterImport() {
   const buildRows = (s: Sheet[], hdr: boolean, map: RosterField[]) =>
     s.flatMap((sh) => {
       const grade = gradeFromSheetName(sh.name);
+      // one row per parent (Student 1 First, Student 1 Last, …): read it as is, no column mapping needed
+      if (hdr && isParentPerRow(sh.rows[0] ?? [])) return parseParentRows(sh.rows, grade);
       if (hdr) return parseMappedRows(sh.rows.slice(1), map, grade);
       return sh.rows.map((r) => parseSmartRow(r, grade)).filter((r): r is RosterRow => !!r);
     });
@@ -64,6 +66,7 @@ export default function RosterImport() {
   });
 
   const reset = () => { setStep(0); setSheets([]); setRows([]); setPreview(null); setResult(null); setError(null); };
+  const parentMode = header && !!sheets[0] && isParentPerRow(sheets[0].rows[0] ?? []);
   const totalRows = sheets.reduce((n, s) => n + s.rows.length - (header ? 1 : 0), 0);
 
   return (
@@ -103,7 +106,9 @@ export default function RosterImport() {
               }} /> First row has column names
             </label>
           </div>
-          {header ? (
+          {parentMode ? (
+            <p className="text-sm text-tx2">This list has <b>one row per parent</b>, with each child in the Student columns. We combined it into one row per child, with both parents on siblings. Check the sample below.</p>
+          ) : header ? (
             <div className="overflow-x-auto">
               <table className="text-sm">
                 <thead><tr>{sheets[0]!.rows[0]!.map((h, i) => (

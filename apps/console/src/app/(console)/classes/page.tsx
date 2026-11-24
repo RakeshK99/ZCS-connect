@@ -4,7 +4,7 @@
 // Each class in the file is made to match it; classes not in the file are left alone.
 // Families come from Roster import; this page only places students in classes.
 import { useMutation } from '@tanstack/react-query';
-import { admin, guessClassField, parseClassListRows, type ClassListField, type ClassListResult, type ClassListRow } from '@zcs/core';
+import { admin, classListFromParentRows, guessClassField, isParentPerRow, parseClassListRows, type ClassListField, type ClassListResult, type ClassListRow } from '@zcs/core';
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, Card, ErrorNote, PageHeader, SectionTitle, Select, cx } from '@/components/ui';
@@ -36,7 +36,9 @@ export default function ClassLists() {
 
   // every tab of a workbook, using the first tab's column layout
   const [all, setAll] = useState<Sheet[]>([]);
-  const build = (tabs: Sheet[], map: ClassListField[]) => tabs.flatMap((t) => parseClassListRows(t.rows.slice(1), map));
+  // A one-row-per-parent family list that names its teacher works here too: its children become that teacher's class.
+  const build = (tabs: Sheet[], map: ClassListField[]) => tabs.flatMap((t) =>
+    isParentPerRow(t.rows[0] ?? []) ? classListFromParentRows(t.rows) : parseClassListRows(t.rows.slice(1), map));
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
@@ -61,7 +63,8 @@ export default function ClassLists() {
   });
   const reset = () => { setStep(0); setSheet(null); setAll([]); setRows([]); setPreview(null); setResult(null); setError(null); };
   const classes = new Set(rows.map((r) => r.class_code.toUpperCase())).size;
-  const missingCols = !mapping.includes('class_code') ? 'a class or section code'
+  const parentMode = !!sheet && isParentPerRow(sheet.rows[0] ?? []);
+  const missingCols = parentMode ? (rows.length ? null : 'a teacher email (this family list names no teacher)') : !mapping.includes('class_code') ? 'a class or section code'
     : !mapping.includes('student_id') && !mapping.includes('student_name') && !(mapping.includes('student_first') && mapping.includes('student_last')) ? 'the student (ID or name)' : null;
 
   return (
@@ -96,6 +99,9 @@ export default function ClassLists() {
             <FileSpreadsheet className="size-5 text-navy" /><span className="font-semibold">{fileName}</span>
             <Badge>{all.length} tab{all.length === 1 ? '' : 's'}</Badge><Badge>{rows.length} rows</Badge><Badge>{classes} classes</Badge>
           </div>
+          {parentMode ? (
+            <p className="text-sm text-tx2">This is a family list with <b>one row per parent</b> that names a teacher. Every child on it goes into that teacher&apos;s class, using the teacher&apos;s email and the grade from the list.</p>
+          ) : (
           <div className="overflow-x-auto">
             <table className="text-sm">
               <thead><tr>{sheet.rows[0]!.map((h, i) => (
@@ -108,7 +114,8 @@ export default function ClassLists() {
               <tbody>{sheet.rows.slice(1, 4).map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className="p-1.5 text-tx2 whitespace-nowrap">{c}</td>)}</tr>)}</tbody>
             </table>
           </div>
-          {missingCols ? <p className="text-sm text-emergency">Pick the column that holds {missingCols}.</p> : null}
+          )}
+          {missingCols ? <p className="text-sm text-emergency">{parentMode ? `This list is missing ${missingCols}.` : `Pick the column that holds ${missingCols}.`}</p> : null}
           <SectionTitle>How the first rows were read</SectionTitle>
           <div className="overflow-x-auto rounded-xl border border-bd">
             <table className="w-full text-sm">

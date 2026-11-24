@@ -1,6 +1,8 @@
 // Class list spreadsheets for the console "Class lists" import: one row per
 // student per class or section, e.g. a FACTS "class roster" export or a sheet
 // ZCS drops in the shared Drive folder before each semester.
+import { parseParentRows, teacherFromParentRows } from './roster';
+
 export type ClassListField =
   | 'class_code' | 'class_name' | 'grade' | 'teacher_email' | 'student_id'
   | 'student_first' | 'student_last' | 'student_name' | 'ignore';
@@ -54,4 +56,21 @@ export function parseClassListRows(rows: unknown[][], mapping: ClassListField[])
     });
   }
   return out;
+}
+
+/**
+ * A one-row-per-parent family list that names its teacher (Teacher Email, plus grade
+ * and name) doubles as a class list: every child on it goes in that teacher's class.
+ * The class code is grade + teacher's last name, e.g. "2-VARGAS".
+ */
+export function classListFromParentRows(rows: unknown[][]): ClassListRow[] {
+  const t = teacherFromParentRows(rows);
+  if (!t) return [];
+  const gradeNum = (t.grade ?? '').match(/\d+/)?.[0] ?? (/^k/i.test(t.grade ?? '') ? 'K' : '');
+  const surname = (t.last ?? t.email.split('@')[0] ?? 'CLASS').replace(/[^a-z]/gi, '').toUpperCase();
+  const code = [gradeNum, surname].filter(Boolean).join('-');
+  const name = [t.grade ? `${t.grade} grade`.replace(/grade grade/i, 'grade') : '', t.last ? t.last : ''].filter(Boolean).join(' · ') || code;
+  return parseParentRows(rows).map((s) => ({
+    class_code: code, class_name: name, grade: t.grade, teacher_emails: [t.email], student_first: s.first, student_last: s.last,
+  }));
 }

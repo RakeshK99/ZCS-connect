@@ -139,3 +139,89 @@ export function gradeFromSheetName(name: string): string | undefined {
   const m = n.match(/(pre-?school|kindergarten|3s\s*(and|&)\s*4s|\d{1,2}(st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth)/i);
   return m?.[0];
 }
+
+// ---------------------------------------------------------------- one row per parent
+// Some school lists have one row per parent with the children in "Student 1 First /
+// Student 1 Last / Student 2 First …" columns, and sometimes a teacher block
+// (Teacher First Name, Teacher Last Name, Grade, Teacher Email) filled in on one row.
+// These helpers turn that into one row per student, merging siblings' parents.
+
+const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[_\-.]/g, ' ').replace(/\s+/g, ' ').trim();
+const STUDENT_COL = /^(student|child|kid)\s*(\d)\s*(first|last)/;
+
+/** True when the header row looks like "one row per parent" (Student 1 First, Student 1 Last, …). */
+export function isParentPerRow(header: unknown[]): boolean {
+  const h = header.map(norm);
+  return h.some((c) => STUDENT_COL.test(c)) && h.some((c) => /mail/.test(c) && !/teacher|staff/.test(c));
+}
+
+interface ParentLayout {
+  email: number; first: number; last: number; grade: number;
+  teacherEmail: number; teacherFirst: number; teacherLast: number;
+  students: { first: number; last: number }[];
+}
+
+function parentLayout(header: unknown[]): ParentLayout {
+  const h = header.map(norm);
+  const find = (ok: (c: string) => boolean) => h.findIndex(ok);
+  const plain = (c: string) => !/student|child|kid|teacher|staff/.test(c);
+  const slots = new Map<number, { first: number; last: number }>();
+  h.forEach((c, i) => {
+    const m = c.match(STUDENT_COL);
+    if (!m) return;
+    const n = Number(m[2]);
+    const s = slots.get(n) ?? { first: -1, last: -1 };
+    if (m[3] === 'first') s.first = i; else s.last = i;
+    slots.set(n, s);
+  });
+  return {
+    email: find((c) => /mail/.test(c) && plain(c)),
+    first: find((c) => /first/.test(c) && plain(c)),
+    last: find((c) => /(last|surname)/.test(c) && plain(c)),
+    grade: find((c) => /grade|level/.test(c) && !/student\s*\d/.test(c)),
+    teacherEmail: find((c) => /teacher|staff/.test(c) && /mail/.test(c)),
+    teacherFirst: find((c) => /teacher|staff/.test(c) && /first/.test(c)),
+    teacherLast: find((c) => /teacher|staff/.test(c) && /last/.test(c)),
+    students: [...slots.entries()].sort((a, b) => a[0] - b[0]).map(([, s]) => s).filter((s) => s.first !== -1),
+  };
+}
+
+/** The one grade written anywhere in the Grade column (e.g. only on the teacher row), if there is exactly one. */
+function singleValue(rows: unknown[][], col: number): string | undefined {
+  if (col === -1) return undefined;
+  const vals = [...new Set(rows.map((r) => String(r[col] ?? '').trim()).filter(Boolean))];
+  return vals.length === 1 ? vals[0] : undefined;
+}
+
+/** One row per parent (header row first) → one RosterRow per student, siblings' parents merged. */
+export function parseParentRows(rows: unknown[][], fallbackGrade?: string): RosterRow[] {
+  const [header = [], ...body] = rows;
+  const L = parentLayout(header);
+  const fileGrade = singleValue(body, L.grade);
+  const byStudent = new Map<string, RosterRow>();
+  for (const raw of body) {
+    const cells = clean(raw);
+    const at = (i: number) => (i === -1 ? '' : cells[i] ?? '');
+    const email = at(L.email).toLowerCase();
+    const parent = isEmail(email) ? { email, first: at(L.first) || undefined, last: at(L.last) || undefined } : null;
+    const rowGrade = L.grade !== -1 && !fileGrade ? at(L.grade) : '';
+    for (const slot of L.students) {
+      const first = at(slot.first), last = at(slot.last) || at(L.last);
+      if (!first || !last) continue;
+      const key = `${norm(first)}|${norm(last).replace(/\s/g, '')}`;
+      const row = byStudent.get(key) ?? { first, last, grade: rowGrade || fileGrade || fallbackGrade || '', guardians: [] };
+      if (parent && !row.guardians.some((g) => g.email === parent.email)) row.guardians.push({ ...parent, last: parent.last ?? last });
+      byStudent.set(key, row);
+    }
+  }
+  return [...byStudent.values()];
+}
+
+/** The teacher block of a one-row-per-parent list, if it has one. */
+export function teacherFromParentRows(rows: unknown[][]): { email: string; first?: string; last?: string; grade?: string } | null {
+  const [header = [], ...body] = rows;
+  const L = parentLayout(header);
+  const email = singleValue(body, L.teacherEmail)?.toLowerCase();
+  if (!email || !isEmail(email)) return null;
+  return { email, first: singleValue(body, L.teacherFirst), last: singleValue(body, L.teacherLast), grade: singleValue(body, L.grade) };
+}

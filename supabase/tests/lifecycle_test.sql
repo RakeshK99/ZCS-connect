@@ -35,8 +35,9 @@ do $$ begin
   perform public.delete_my_account();
   perform pg_temp.check('a shared demo account cannot be deleted', false);
 exception when others then perform pg_temp.check('a shared demo account cannot be deleted', sqlerrm like '%shared by everyone testing%'); end $$;
--- A real family's account can: give Sarah a non-demo address for this block.
+-- A real family's account can: treat the school as a real one for this block.
 reset role;
+update public.schools set is_demo = false;
 update public.people set email = 'sarah.family@zcs-test.org', user_id = null where email = 'rakesh+sarah@syzygy.services';
 select pg_temp.as_user('sarah.family@zcs-test.org');
 select public.mark_post_read((select id from public.posts where title like 'Snow day%'));
@@ -48,6 +49,7 @@ select pg_temp.check('deleting an account removes the sign-in and app data',
   and not exists (select 1 from auth.users where email = 'sarah.family@zcs-test.org')
   and not exists (select 1 from public.post_reads r join public.people p on p.id = r.person_id where p.email = 'sarah.family@zcs-test.org')
   and not exists (select 1 from public.notification_prefs n join public.people p on p.id = n.person_id where p.email = 'sarah.family@zcs-test.org'));
+update public.schools set is_demo = true;
 select pg_temp.check('account deletion is audited', exists (select 1 from public.audit_log where action = 'account.delete'));
 select pg_temp.as_user('sarah.family@zcs-test.org');
 select pg_temp.check('signing in again creates a new linked account', (public.session_info()->>'linked')::boolean);
