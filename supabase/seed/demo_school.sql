@@ -48,8 +48,8 @@ declare
 begin
   if exists (select 1 from public.schools) then raise notice 'already seeded'; return; end if;
 
-  insert into public.schools (name, short_name, staff_email_domain, office_email)
-  values ('Zeeland Christian School', 'ZCS', 'zcs.org', 'rakesh+office@syzygy.services') returning id into v_school;
+  insert into public.schools (name, short_name, staff_email_domain, office_email, is_demo)
+  values ('Zeeland Christian School', 'ZCS', 'zcs.org', 'rakesh+office@syzygy.services', true) returning id into v_school;
 
   insert into public.divisions (school_id, name, sort_order) values (v_school, 'Preschool', 0) returning id into v_pre;
   insert into public.divisions (school_id, name, sort_order) values (v_school, 'Elementary', 1) returning id into v_el;
